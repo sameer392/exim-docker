@@ -108,7 +108,7 @@ $config['des_key'] = '9VowK5N2qSylHA1E6IBIc9sx';
 $config['cipher_method'] = 'AES-256-CBC';
 
 // Product name
-$config['product_name'] = 'Hemochrom Mail';
+$config['product_name'] = 'Webmail';
 
 // Specifies the full path of the original HTTP request, either as a real path or
 // $_SERVER field name. This might be useful when Roundcube runs behind a reverse
