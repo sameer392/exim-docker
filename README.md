@@ -32,6 +32,7 @@ A complete, production-ready Docker mail server setup with Exim4, Dovecot, and R
 ### Prerequisites
 
 - Docker and Docker Compose installed
+  - If Docker is not installed, use: `./helper-scripts/install-docker.sh` (for AlmaLinux/RHEL 9)
 - Server with ports 25, 587, 465, 143, 993, 110, 995, 8080 open
 - Domain DNS access (Cloudflare recommended)
 
@@ -154,12 +155,12 @@ Then add the TXT record in Cloudflare:
 Use the provided script to change any email account password:
 
 ```bash
-./change-password.sh <email@domain.com> <new_password>
+./helper-scripts/change-password.sh <email@domain.com> <new_password>
 ```
 
 **Example:**
 ```bash
-./change-password.sh info@example.com MyNewSecurePassword123!
+./helper-scripts/change-password.sh info@example.com MyNewSecurePassword123!
 ```
 
 This script will:
@@ -253,6 +254,13 @@ This allows external SMTP services (like smtp24x7.com) to relay emails through y
 ## 🛠️ Troubleshooting
 
 ### Check Service Status
+
+**Quick status check:**
+```bash
+./helper-scripts/check-exim-status.sh
+```
+
+**Manual checks:**
 ```bash
 docker compose ps
 docker compose logs mailserver --tail 50
@@ -387,6 +395,27 @@ Key configuration files:
 - `scripts/entrypoint-exim.sh` - Exim startup script
 - `scripts/setup-mail.sh` - Mail user setup script
 - `scripts/setup-dkim.sh` - DKIM key generation script
+- `opendkim/` - OpenDKIM configuration files
+- `supervisord/` - Supervisord configuration files
+
+## 🛠️ Helper Scripts
+
+Helper scripts are located in `helper-scripts/`:
+
+- **`install-docker.sh`** - Install Docker and Docker Compose on AlmaLinux/RHEL 9
+  ```bash
+  ./helper-scripts/install-docker.sh
+  ```
+
+- **`change-password.sh`** - Change email account password
+  ```bash
+  ./helper-scripts/change-password.sh <email@domain.com> <new_password>
+  ```
+
+- **`check-exim-status.sh`** - Check Exim mail server status
+  ```bash
+  ./helper-scripts/check-exim-status.sh
+  ```
 
 ## 🔄 Updating
 
