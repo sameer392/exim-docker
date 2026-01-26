@@ -1,0 +1,15 @@
+# Transports configuration
+
+begin transports
+
+local_delivery:
+  driver = appendfile
+  file = /var/mail/vhosts/${domain}/${local_part}
+  delivery_date_add
+  envelope_to_add
+  return_path_add
+  group = mail
+  mode = 0660
+  mode_fail_narrower = false
+
+end

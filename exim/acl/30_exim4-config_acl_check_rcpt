@@ -1,0 +1,29 @@
+# ACL configuration
+
+begin acl
+
+acl_smtp_rcpt:
+  accept  hosts = +relay_from_hosts
+  accept  authenticated = *
+  accept  domains = +local_domains
+  deny    message = Restricted characters in address
+           domains = +local_domains
+           local_parts = ^[.] : ^.*[@%!/|]
+  deny    message = User unknown in local_domains
+           !verify = recipient
+  accept  domains = +local_domains
+           message = Unknown user
+           verify = recipient
+  accept
+
+acl_smtp_data:
+  accept
+
+acl_smtp_mail:
+  accept
+
+acl_smtp_auth:
+  accept  authenticated = *
+  accept
+
+end

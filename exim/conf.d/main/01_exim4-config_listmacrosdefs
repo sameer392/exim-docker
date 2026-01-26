@@ -1,0 +1,69 @@
+# Exim4 configuration for hemochrom.com
+# Main configuration file
+
+# Basic settings
+primary_hostname = smtp0.hemochrom.com
+domainlist local_domains = hemochrom.com
+domainlist relay_to_domains =
+hostlist relay_from_hosts = 127.0.0.1 : ::1
+qualify_domain = hemochrom.com
+
+# TLS/SSL configuration
+tls_advertise_hosts = *
+tls_certificate = /etc/exim4/exim.crt
+tls_privatekey = /etc/exim4/exim.key
+
+# Authentication
+auth_advertise_hosts = *
+
+# ACL
+acl_smtp_rcpt = acl_smtp_rcpt
+
+# Routing
+begin routers
+
+localuser:
+  driver = accept
+  domains = +local_domains
+  local_parts = lsearch{/etc/exim4/passwd}
+  transport = local_delivery
+
+# Transports
+begin transports
+
+local_delivery:
+  driver = appendfile
+  directory = /var/mail/vhosts/${domain}/${local_part}
+  maildir_format
+  delivery_date_add
+  envelope_to_add
+  return_path_add
+  user = mail
+  group = mail
+  mode = 0660
+
+# ACLs
+begin acl
+
+acl_smtp_rcpt:
+  accept  hosts = +relay_from_hosts
+  accept  authenticated = *
+  accept  domains = +local_domains
+  deny    message = relay not permitted
+
+# Authenticators
+begin authenticators
+
+plain:
+  driver = plaintext
+  public_name = PLAIN
+  server_condition = "${if crypteq{$auth3}{${extract{1}{:}{${lookup{$auth2}lsearch{/etc/exim4/passwd}}}}}{1}{0}}"
+  server_set_id = $auth2
+  server_prompts = :
+
+login:
+  driver = plaintext
+  public_name = LOGIN
+  server_condition = "${if crypteq{$auth2}{${extract{1}{:}{${lookup{$auth1}lsearch{/etc/exim4/passwd}}}}}{1}{0}}"
+  server_set_id = $auth1
+  server_prompts = Username:: : Password::

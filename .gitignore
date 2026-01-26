@@ -1,0 +1,54 @@
+# Docker volumes and data
+data/
+
+# Environment files with sensitive data
+.env
+.env.local
+*.env
+
+# Logs (may contain sensitive information)
+*.log
+data/log/
+
+# Temporary files
+*.tmp
+*.swp
+*~
+*.bak
+*.backup
+
+# OS files
+.DS_Store
+Thumbs.db
+.directory
+
+# IDE files
+.vscode/
+.cursor/
+.idea/
+*.sublime-*
+
+# Private keys and certificates (if not using volumes)
+*.key
+*.pem
+*.crt
+!exim/exim4.conf
+
+# Password files (never commit these!)
+passwd
+*.passwd
+passwords.txt
+
+# DKIM private keys (public keys in DNS are fine)
+**/opendkim/keys/**/*.private
+
+# Database dumps
+*.sql
+*.dump
+
+# Docker build cache
+.docker/
+
+# Backup files
+*.old
+*.orig

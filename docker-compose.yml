@@ -1,0 +1,84 @@
+version: '3.8'
+
+services:
+  mailserver:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: exim-mailserver
+    hostname: smtp0.hemochrom.com
+    environment:
+      - DOMAIN=hemochrom.com
+      - HOSTNAME=smtp0.hemochrom.com
+      - EMAIL_USER=info
+      - EMAIL_PASS=ChangeMe123!
+    volumes:
+      - ./data/mail:/var/mail/vhosts
+      - ./data/spool:/var/spool/exim4
+      - ./data/log:/var/log/exim4
+      - ./exim/exim4.conf:/etc/exim4/exim4.conf:ro
+    ports:
+      - "25:25"
+      - "587:587"
+      - "465:465"
+    networks:
+      - mailnet
+    restart: unless-stopped
+
+  dovecot:
+    image: dovecot/dovecot:latest
+    container_name: dovecot-mailserver
+    hostname: smtp0.hemochrom.com
+    environment:
+      - DOMAIN=hemochrom.com
+      - USER_PASSWORD=ChangeMe123!
+    volumes:
+      - ./data/mail:/srv/mail
+    ports:
+      - "143:31143"
+      - "993:31993"
+      - "110:31110"
+      - "995:31995"
+    networks:
+      - mailnet
+    restart: unless-stopped
+    depends_on:
+      - mailserver
+
+  db:
+    image: mariadb:latest
+    container_name: roundcube-db
+    environment:
+      - MYSQL_ROOT_PASSWORD=roundcube_root_pass
+      - MYSQL_DATABASE=roundcubemail
+      - MYSQL_USER=roundcube
+      - MYSQL_PASSWORD=roundcube_pass
+    volumes:
+      - ./data/db:/var/lib/mysql
+    networks:
+      - mailnet
+    restart: unless-stopped
+
+  roundcube:
+    image: roundcube/roundcubemail:latest
+    container_name: roundcube-webmail
+    environment:
+      - ROUNDCUBEMAIL_DB_TYPE=mysql
+      - ROUNDCUBEMAIL_DB_HOST=db
+      - ROUNDCUBEMAIL_DB_NAME=roundcubemail
+      - ROUNDCUBEMAIL_DB_USER=roundcube
+      - ROUNDCUBEMAIL_DB_PASSWORD=roundcube_pass
+    volumes:
+      - ./roundcube/config.inc.php:/var/www/html/config/config.inc.php:ro
+    ports:
+      - "8080:80"
+    networks:
+      - mailnet
+    restart: unless-stopped
+    depends_on:
+      - db
+      - dovecot
+
+networks:
+  mailnet:
+    driver: bridge

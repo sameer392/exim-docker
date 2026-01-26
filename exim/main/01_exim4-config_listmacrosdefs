@@ -1,0 +1,16 @@
+# Main Exim4 configuration
+# This file is included by update-exim4.conf
+
+primary_hostname = smtp0.hemochrom.com
+domainlist local_domains = hemochrom.com
+domainlist relay_to_domains =
+hostlist relay_from_hosts = 127.0.0.1 : ::1
+qualify_domain = hemochrom.com
+
+# TLS/SSL configuration
+tls_advertise_hosts = *
+tls_certificate = /etc/exim4/exim.crt
+tls_privatekey = /etc/exim4/exim.key
+
+# Authentication
+auth_advertise_hosts = *

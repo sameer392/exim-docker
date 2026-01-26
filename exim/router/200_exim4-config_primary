@@ -1,0 +1,11 @@
+# Routers configuration
+
+begin routers
+
+localuser:
+  driver = accept
+  domains = +local_domains
+  check_local_user
+  transport = local_delivery
+
+end
