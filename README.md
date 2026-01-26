@@ -147,9 +147,28 @@ Then add the TXT record in Cloudflare:
 - **Username**: info@example.com
 - **Password**: (your password)
 
-## 🔐 Changing Default Password
+## 🔐 Changing Email Account Password
 
-### Method 1: Using Environment Variable (Recommended)
+### Method 1: Using Helper Script (Easiest) ⭐
+
+Use the provided script to change any email account password:
+
+```bash
+./change-password.sh <email@domain.com> <new_password>
+```
+
+**Example:**
+```bash
+./change-password.sh info@example.com MyNewSecurePassword123!
+```
+
+This script will:
+- Generate the password hash
+- Update Exim password file
+- Update Dovecot configuration
+- Restart mail services automatically
+
+### Method 2: Using Environment Variable (For Initial Setup)
 
 1. **Edit `docker-compose.yml`:**
    ```yaml
@@ -163,22 +182,39 @@ Then add the TXT record in Cloudflare:
    docker compose up -d --build
    ```
 
-### Method 2: Manual Update
+**Note:** This method only works for the default user set in `EMAIL_USER`. For existing accounts, use Method 1 or 3.
+
+### Method 3: Manual Update (Advanced)
 
 1. **Generate password hash:**
    ```bash
    docker exec exim-mailserver openssl passwd -1 "YourNewPassword"
    ```
+   Copy the generated hash (starts with `$1$`).
 
 2. **Update password file:**
    ```bash
-   docker exec exim-mailserver sh -c "echo 'info@example.com:NEW_HASH' > /etc/exim4/passwd && chmod 640 /etc/exim4/passwd && chown root:Debian-exim /etc/exim4/passwd"
+   # For existing user (replace the hash)
+   docker exec exim-mailserver sh -c "sed -i 's|^info@example.com:.*|info@example.com:NEW_HASH|' /etc/exim4/passwd && chmod 640 /etc/exim4/passwd && chown root:Debian-exim /etc/exim4/passwd"
+   
+   # Or for new user (add new entry)
+   docker exec exim-mailserver sh -c "echo 'user@example.com:NEW_HASH' >> /etc/exim4/passwd && chmod 640 /etc/exim4/passwd && chown root:Debian-exim /etc/exim4/passwd"
    ```
 
-3. **Restart container:**
+3. **Restart containers:**
    ```bash
-   docker compose restart mailserver
+   docker compose restart mailserver dovecot
    ```
+
+### Method 4: Using Roundcube Webmail (If Enabled)
+
+If password change is enabled in Roundcube:
+1. Login to Roundcube webmail
+2. Go to Settings → Password
+3. Enter old password and new password
+4. Save changes
+
+**Note:** This requires Roundcube password plugin to be configured.
 
 ## 👥 Adding More Email Accounts
 

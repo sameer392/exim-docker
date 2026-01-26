@@ -11,12 +11,13 @@ services:
       - DOMAIN=hemochrom.com
       - HOSTNAME=smtp0.hemochrom.com
       - EMAIL_USER=info
-      - EMAIL_PASS=ChangeMe123!
+      - EMAIL_PASS=Sameer392!
     volumes:
       - ./data/mail:/var/mail/vhosts
       - ./data/spool:/var/spool/exim4
       - ./data/log:/var/log/exim4
       - ./exim/exim4.conf:/etc/exim4/exim4.conf:ro
+      - ./data/passwd:/etc/exim4/passwd
     ports:
       - "25:25"
       - "587:587"
@@ -31,7 +32,7 @@ services:
     hostname: smtp0.hemochrom.com
     environment:
       - DOMAIN=hemochrom.com
-      - USER_PASSWORD=ChangeMe123!
+      - USER_PASSWORD=Sameer392!
     volumes:
       - ./data/mail:/srv/mail
     ports:
