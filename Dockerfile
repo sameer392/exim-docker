@@ -35,10 +35,10 @@ COPY scripts/entrypoint-exim.sh /entrypoint.sh
 COPY scripts/setup-mail.sh /scripts/setup-mail.sh
 COPY scripts/setup-dkim.sh /scripts/setup-dkim.sh
 COPY supervisord-exim.conf /etc/supervisor/conf.d/supervisord.conf
-COPY opendkim.conf /etc/opendkim.conf
-COPY opendkim-KeyTable /etc/opendkim/KeyTable
-COPY opendkim-SigningTable /etc/opendkim/SigningTable
-COPY opendkim-TrustedHosts /etc/opendkim/TrustedHosts
+COPY opendkim/opendkim.conf /etc/opendkim.conf
+COPY opendkim/opendkim-KeyTable /etc/opendkim/KeyTable
+COPY opendkim/opendkim-SigningTable /etc/opendkim/SigningTable
+COPY opendkim/opendkim-TrustedHosts /etc/opendkim/TrustedHosts
 
 # Setup DKIM
 RUN mkdir -p /etc/opendkim/keys/${DOMAIN} \
