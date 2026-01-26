@@ -130,7 +130,7 @@ $config['language'] = 'en_US';
 $config['enable_spellcheck'] = true;
 
 // Timezone
-$config['timezone'] = 'UTC';
+$config['timezone'] = 'Asia/Kolkata';
 
 // Enable user preferences
 $config['user_preferences'] = true;

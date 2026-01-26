@@ -1,6 +1,7 @@
 FROM ubuntu:24.04
 
 ENV DEBIAN_FRONTEND=noninteractive
+ENV TZ=Asia/Kolkata
 ENV DOMAIN=hemochrom.com
 ENV HOSTNAME=smtp0.hemochrom.com
 
@@ -15,7 +16,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     openssl \
     supervisor \
     netcat-openbsd \
-    && rm -rf /var/lib/apt/lists/*
+    tzdata \
+    && rm -rf /var/lib/apt/lists/* \
+    && ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
 
 # Create necessary directories
 RUN mkdir -p /var/spool/exim4/input /var/spool/exim4/db /var/log/exim4 /etc/exim4 /var/mail/vhosts/${DOMAIN} \
