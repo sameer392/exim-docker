@@ -12,11 +12,11 @@ echo "Starting Exim mail server setup for domain: $DOMAIN"
 mkdir -p /var/mail/vhosts/${DOMAIN}/${EMAIL_USER}
 chown -R mail:mail /var/mail/vhosts
 
-# Ensure spool directory has correct permissions
-mkdir -p /var/spool/exim4/input /var/spool/exim4/db
-chown -R Debian-exim:Debian-exim /var/spool/exim4
-chmod 755 /var/spool/exim4
-chmod 700 /var/spool/exim4/input
+# Ensure log directory and files exist
+mkdir -p /var/log/exim4
+touch /var/log/exim4/mainlog /var/log/exim4/rejectlog /var/log/exim4/paniclog
+chown Debian-exim:adm /var/log/exim4/mainlog /var/log/exim4/rejectlog /var/log/exim4/paniclog
+chmod 640 /var/log/exim4/mainlog /var/log/exim4/rejectlog /var/log/exim4/paniclog
 
 # Setup mail user password (for Exim)
 /scripts/setup-mail.sh || echo "Warning: setup-mail.sh failed, continuing..."

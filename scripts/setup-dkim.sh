@@ -29,6 +29,12 @@ if [ ! -f /etc/opendkim/keys/${DOMAIN}/${DKIM_SELECTOR}.private ]; then
     chown root:Debian-exim /etc/opendkim/keys/${DOMAIN}/${DKIM_SELECTOR}.private
     chmod 644 /etc/opendkim/keys/${DOMAIN}/${DKIM_SELECTOR}.txt
     
+    # Update OpenDKIM tables with the correct selector
+    sed -i "s/mail\._domainkey\.hemochrom\.com/${DKIM_SELECTOR}._domainkey.hemochrom.com/g" /etc/opendkim/KeyTable
+    sed -i "s/:mail:/:${DKIM_SELECTOR}:/g" /etc/opendkim/KeyTable
+    sed -i "s/mail\.private/${DKIM_SELECTOR}.private/g" /etc/opendkim/KeyTable
+    sed -i "s/mail\._domainkey\.hemochrom\.com/${DKIM_SELECTOR}._domainkey.hemochrom.com/g" /etc/opendkim/SigningTable
+    
     echo "DKIM keys generated!"
     echo ""
     echo "=== DKIM Public Key (add to Cloudflare DNS) ==="

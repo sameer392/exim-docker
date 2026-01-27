@@ -18,7 +18,6 @@ services:
       - ./data/spool:/var/spool/exim4
       - ./data/log:/var/log/exim4
       - ./exim/exim4.conf:/etc/exim4/exim4.conf:ro
-      - ./data/passwd:/etc/exim4/passwd
     ports:
       - "25:25"
       - "587:587"
