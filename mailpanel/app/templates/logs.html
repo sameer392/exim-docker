@@ -1,0 +1,108 @@
+{% extends "base.html" %}
+{% set active = 'logs' %}
+{% block title %}Mail Logs — Mail Admin{% endblock %}
+{% block content %}
+<h1>Mail logs</h1>
+<p class="muted">Live Exim logs for new mail activity. Auto-refreshes every 10 seconds.</p>
+
+<div class="card">
+  <div class="card-header">
+    <h2>Log viewer</h2>
+    <div class="actions">
+      <button type="button" class="btn secondary" id="refresh-btn">Refresh now</button>
+      <form method="post" action="/logs/clear" class="inline" onsubmit="return confirm('Clear all mail log files? This cannot be undone.')">
+        <button type="submit" class="btn danger">Clear all logs</button>
+      </form>
+    </div>
+  </div>
+
+  <div class="log-toolbar">
+    <div class="log-tabs">
+      {% for key, label in log_types.items() %}
+      <a href="/logs?type={{ key }}&lines={{ lines }}{% if query %}&q={{ query }}{% endif %}"
+         class="log-tab {% if log_type == key %}active{% endif %}">{{ key }}</a>
+      {% endfor %}
+    </div>
+
+    <form method="get" action="/logs" class="log-filters">
+      <input type="hidden" name="type" value="{{ log_type }}">
+      <label>
+        Lines
+        <select name="lines" onchange="this.form.submit()">
+          {% for n in [100, 200, 500, 1000] %}
+          <option value="{{ n }}" {% if lines == n %}selected{% endif %}>{{ n }}</option>
+          {% endfor %}
+        </select>
+      </label>
+      <label>
+        Search
+        <input type="text" name="q" value="{{ query }}" placeholder="email, domain, error...">
+      </label>
+      <button type="submit" class="btn secondary small">Filter</button>
+    </form>
+  </div>
+
+  <div class="log-meta muted">
+    File: <code>{{ info.path }}</code>
+    · {{ info.info.lines }} total lines
+    · {{ (info.info.size / 1024)|round(1) }} KB
+    · showing {{ info.count }} lines
+  </div>
+
+  <div class="log-viewer" id="log-viewer">
+    {% if info.entries %}
+      {% for line in info.entries %}
+      <div class="log-line {{ line|log_class }}">{{ line }}</div>
+      {% endfor %}
+    {% else %}
+      <div class="log-empty">No log entries yet. New mail activity will appear here.</div>
+    {% endif %}
+  </div>
+</div>
+
+<script>
+  const logType = {{ log_type|tojson }};
+  const lines = {{ lines|tojson }};
+  const query = {{ query|tojson }};
+  const viewer = document.getElementById('log-viewer');
+  const refreshBtn = document.getElementById('refresh-btn');
+
+  function lineClass(line) {
+    if (/\*\*/.test(line) || /error|failed|deferred|rejected/i.test(line)) return 'log-error';
+    if (/=>/.test(line) || /Completed/.test(line) || /250 2\.0\.0 OK/.test(line)) return 'log-ok';
+    if (/<=/.test(line)) return 'log-in';
+    if (/TLS error|panic/i.test(line)) return 'log-warn';
+    return '';
+  }
+
+  function escapeHtml(text) {
+    return text
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;');
+  }
+
+  function renderEntries(entries) {
+    if (!entries.length) {
+      viewer.innerHTML = '<div class="log-empty">No log entries yet. New mail activity will appear here.</div>';
+      return;
+    }
+    viewer.innerHTML = entries.map((line) =>
+      `<div class="log-line ${lineClass(line)}">${escapeHtml(line)}</div>`
+    ).join('');
+    viewer.scrollTop = viewer.scrollHeight;
+  }
+
+  async function refreshLogs() {
+    const params = new URLSearchParams({ type: logType, lines, q: query });
+    const response = await fetch(`/logs/data?${params.toString()}`);
+    if (!response.ok) return;
+    const data = await response.json();
+    renderEntries(data.entries);
+  }
+
+  refreshBtn.addEventListener('click', refreshLogs);
+  viewer.scrollTop = viewer.scrollHeight;
+  setInterval(refreshLogs, 10000);
+</script>
+{% endblock %}

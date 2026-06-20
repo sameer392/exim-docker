@@ -2,6 +2,7 @@ import os
 from pathlib import Path
 
 DATA_DIR = Path(os.getenv("DATA_DIR", "/data"))
+LOG_DIR = DATA_DIR / "log"
 PASSWD_FILE = DATA_DIR / "passwd"
 DOMAINS_FILE = DATA_DIR / "exim" / "domains"
 MAIL_DIR = DATA_DIR / "mail"

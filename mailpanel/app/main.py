@@ -8,7 +8,7 @@ from pathlib import Path
 
 from .auth import create_session_token, is_authenticated, verify_admin_password
 from .config import SESSION_COOKIE
-from .services import docker_ops, mail
+from .services import docker_ops, logs, mail
 from .urls import webmail_url
 
 app = FastAPI(title="Mail Admin Panel", docs_url=None, redoc_url=None)
@@ -16,6 +16,22 @@ app = FastAPI(title="Mail Admin Panel", docs_url=None, redoc_url=None)
 BASE_DIR = Path(__file__).resolve().parent
 templates = Jinja2Templates(directory=str(BASE_DIR / "templates"))
 app.mount("/static", StaticFiles(directory=str(BASE_DIR / "static")), name="static")
+
+
+def _log_line_class(line: str) -> str:
+    lower = line.lower()
+    if "**" in line or "error" in lower or "failed" in lower or "deferred" in lower or "rejected" in lower:
+        return "log-error"
+    if "=>" in line or "completed" in lower or "250 2.0.0 ok" in lower:
+        return "log-ok"
+    if "<=" in line:
+        return "log-in"
+    if "tls error" in lower or "panic" in lower:
+        return "log-warn"
+    return ""
+
+
+templates.env.filters["log_class"] = _log_line_class
 
 
 def render(request: Request, template: str, status_code: int = 200, **context):
@@ -190,3 +206,55 @@ async def services_restart(request: Request):
         return RedirectResponse(f"/?msg=Restarted:+{names}", status_code=303)
     except Exception as exc:
         return RedirectResponse(f"/?error={quote(str(exc))}", status_code=303)
+
+
+@app.get("/logs", response_class=HTMLResponse)
+async def logs_page(request: Request):
+    if redirect := require_auth(request):
+        return redirect
+
+    log_type = request.query_params.get("type", "main")
+    if log_type not in logs.LOG_FILES:
+        log_type = "main"
+
+    lines = int(request.query_params.get("lines", logs.DEFAULT_LINES))
+    query = request.query_params.get("q", "").strip()
+    info = logs.read_log_tail(log_type, lines=lines, query=query)
+
+    return render(
+        request,
+        "logs.html",
+        log_type=log_type,
+        log_types=logs.list_log_types(),
+        lines=lines,
+        query=query,
+        info=info,
+        message=request.query_params.get("msg"),
+        error=request.query_params.get("error"),
+    )
+
+
+@app.get("/logs/data")
+async def logs_data(request: Request):
+    if redirect := require_auth(request):
+        return redirect
+
+    log_type = request.query_params.get("type", "main")
+    if log_type not in logs.LOG_FILES:
+        log_type = "main"
+
+    lines = int(request.query_params.get("lines", logs.DEFAULT_LINES))
+    query = request.query_params.get("q", "").strip()
+    return logs.read_log_tail(log_type, lines=lines, query=query)
+
+
+@app.post("/logs/clear")
+async def logs_clear(request: Request):
+    if redirect := require_auth(request):
+        return redirect
+    try:
+        cleared = logs.clear_logs()
+        names = ", ".join(cleared)
+        return RedirectResponse(f"/logs?msg=Cleared:+{quote(names)}", status_code=303)
+    except Exception as exc:
+        return RedirectResponse(f"/logs?error={quote(str(exc))}", status_code=303)
