@@ -41,6 +41,7 @@ services:
       - ./data/passwd:/etc/dovecot/passwd:ro
       - ./data/ssl:/etc/dovecot/ssl:ro
       - ./dovecot/conf.d:/etc/dovecot/conf.d:ro
+      - ./dovecot/sieve:/etc/dovecot/sieve
     ports:
       - "143:31143"
       - "993:31993"
