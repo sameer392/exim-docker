@@ -66,7 +66,7 @@ if [ -f ./data/passwd ]; then
         echo "${EMAIL_ADDRESS}:${PASS_HASH}" >> ./data/passwd
         echo "Added to mounted password file"
     fi
-    chmod 640 ./data/passwd
+    chmod 644 ./data/passwd
 fi
 
 # Create maildir for new users

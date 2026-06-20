@@ -117,7 +117,7 @@ def _write_passwd(entries: dict[str, str]) -> None:
     PASSWD_FILE.parent.mkdir(parents=True, exist_ok=True)
     lines = [f"{email}:{pwd_hash}" for email, pwd_hash in sorted(entries.items())]
     PASSWD_FILE.write_text("\n".join(lines) + ("\n" if lines else ""))
-    os.chmod(PASSWD_FILE, 0o640)
+    os.chmod(PASSWD_FILE, 0o644)
 
 
 def _ensure_maildir(domain: str, local: str) -> Path:
