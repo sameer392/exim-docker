@@ -8,7 +8,7 @@ from pathlib import Path
 
 from .auth import create_session_token, is_authenticated, verify_admin_password
 from .config import SESSION_COOKIE
-from .services import docker_ops, logs, mail
+from .services import docker_ops, logs, mail, rate_limits
 from .urls import webmail_url
 
 app = FastAPI(title="Mail Admin Panel", docs_url=None, redoc_url=None)
@@ -137,10 +137,12 @@ async def domains_delete(request: Request, domain: str = Form(...)):
 async def users_page(request: Request):
     if redirect := require_auth(request):
         return redirect
+    rate_limits.ensure_defaults()
     return render(
         request,
         "users.html",
-        users=mail.list_users(),
+        users=rate_limits.users_with_tiers(),
+        tiers=rate_limits.list_tiers(),
         domains=mail.list_domains(),
         message=request.query_params.get("msg"),
         error=request.query_params.get("error"),
@@ -153,6 +155,7 @@ async def users_add(
     email: str = Form(...),
     password: str = Form(...),
     confirm_password: str = Form(...),
+    tier_id: str = Form("level2"),
 ):
     if redirect := require_auth(request):
         return redirect
@@ -160,6 +163,7 @@ async def users_add(
         return RedirectResponse("/users?error=Passwords+do+not+match", status_code=303)
     try:
         mail.upsert_user(email, password)
+        rate_limits.set_user_tier(email, tier_id)
         docker_ops.restart_mail_services()
         return RedirectResponse(f"/users?msg=User+{email}+saved", status_code=303)
     except Exception as exc:
@@ -191,10 +195,68 @@ async def users_delete(request: Request, email: str = Form(...)):
         return redirect
     try:
         mail.delete_user(email)
+        rate_limits.remove_user_assignment(email)
+        rate_limits.sync_lookup_files()
         docker_ops.restart_mail_services()
         return RedirectResponse(f"/users?msg=User+{email}+deleted", status_code=303)
     except Exception as exc:
         return RedirectResponse(f"/users?error={quote(str(exc))}", status_code=303)
+
+
+@app.post("/users/tier")
+async def users_tier(
+    request: Request,
+    email: str = Form(...),
+    tier_id: str = Form(...),
+):
+    if redirect := require_auth(request):
+        return redirect
+    try:
+        rate_limits.set_user_tier(email, tier_id)
+        docker_ops.apply_rate_limits()
+        return RedirectResponse(f"/users?msg=Rate+limit+updated+for+{email}", status_code=303)
+    except Exception as exc:
+        return RedirectResponse(f"/users?error={quote(str(exc))}", status_code=303)
+
+
+@app.get("/rate-limits", response_class=HTMLResponse)
+async def rate_limits_page(request: Request):
+    if redirect := require_auth(request):
+        return redirect
+    rate_limits.ensure_defaults()
+    rate_limits.sync_lookup_files()
+    return render(
+        request,
+        "rate_limits.html",
+        tiers=rate_limits.list_tiers(),
+        users=rate_limits.users_with_tiers(),
+        message=request.query_params.get("msg"),
+        error=request.query_params.get("error"),
+    )
+
+
+@app.post("/rate-limits/save")
+async def rate_limits_save(request: Request):
+    if redirect := require_auth(request):
+        return redirect
+    form = await request.form()
+    try:
+        levels = []
+        for tier_id in rate_limits.TIER_ORDER:
+            levels.append(
+                {
+                    "id": tier_id,
+                    "name": form.get(f"tier_name_{tier_id}", tier_id),
+                    "per_10m": form.get(f"tier_10m_{tier_id}", "1"),
+                    "per_1h": form.get(f"tier_1h_{tier_id}", "1"),
+                    "per_1d": form.get(f"tier_1d_{tier_id}", "1"),
+                }
+            )
+        rate_limits.save_tiers(levels)
+        docker_ops.apply_rate_limits()
+        return RedirectResponse("/rate-limits?msg=Rate+limit+levels+saved", status_code=303)
+    except Exception as exc:
+        return RedirectResponse(f"/rate-limits?error={quote(str(exc))}", status_code=303)
 
 
 @app.post("/services/restart")

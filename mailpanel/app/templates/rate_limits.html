@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+{% set active = 'rate_limits' %}
+{% block title %}Rate Limits — Mail Admin{% endblock %}
+{% block content %}
+<h1>Rate limits</h1>
+<p class="muted">Three sending tiers applied per email account. Limits count each recipient (RCPT TO) per message.</p>
+
+<section class="card">
+  <h2>Rate limit levels</h2>
+  <form method="post" action="/rate-limits/save">
+    <table>
+      <thead>
+        <tr>
+          <th>Level</th>
+          <th>Display name</th>
+          <th>Per 10 minutes</th>
+          <th>Per 1 hour</th>
+          <th>Per 1 day</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for tier in tiers %}
+        <tr>
+          <td><strong>{{ tier.id }}</strong></td>
+          <td>
+            <input type="hidden" name="tier_id" value="{{ tier.id }}">
+            <input type="text" name="tier_name_{{ tier.id }}" value="{{ tier.name }}" required>
+          </td>
+          <td><input type="number" name="tier_10m_{{ tier.id }}" value="{{ tier.per_10m }}" min="1" required></td>
+          <td><input type="number" name="tier_1h_{{ tier.id }}" value="{{ tier.per_1h }}" min="1" required></td>
+          <td><input type="number" name="tier_1d_{{ tier.id }}" value="{{ tier.per_1d }}" min="1" required></td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    <p class="muted" style="margin-top: 1rem;">10-minute limit must be ≤ hourly limit ≤ daily limit.</p>
+    <button type="submit" class="btn primary" style="margin-top: 1rem;">Save rate limit levels</button>
+  </form>
+</section>
+
+<section class="card">
+  <h2>Assign levels to accounts</h2>
+  <p class="muted">Change a user's level from the <a href="/users">Users</a> page. New accounts default to <strong>Level 2 — Medium</strong>.</p>
+  {% if users %}
+  <table>
+    <thead>
+      <tr>
+        <th>Email</th>
+        <th>Level</th>
+        <th>10 min / 1 hr / 1 day</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for user in users %}
+      <tr>
+        <td>{{ user.email }}</td>
+        <td>{{ user.tier_name }}</td>
+        <td><code>{{ user.limits.per_10m }} / {{ user.limits.per_1h }} / {{ user.limits.per_1d }}</code></td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <p class="muted">No email accounts yet.</p>
+  {% endif %}
+</section>
+{% endblock %}

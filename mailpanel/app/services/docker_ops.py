@@ -67,6 +67,25 @@ def run_setup_dkim() -> str:
     return text
 
 
+def reload_exim() -> str:
+    client = _client()
+    if not client:
+        raise RuntimeError("Docker socket not available")
+    try:
+        container = client.containers.get(EXIM_CONTAINER)
+    except NotFound:
+        raise RuntimeError(f"Container not found: {EXIM_CONTAINER}")
+    exit_code, output = container.exec_run("exim4 -reload")
+    text = output.decode("utf-8", errors="replace").strip()
+    if exit_code != 0:
+        raise RuntimeError(text or "Exim reload failed")
+    return text or "Exim reloaded"
+
+
+def apply_rate_limits() -> str:
+    return reload_exim()
+
+
 def read_dkim_record(domain: str, selector: str) -> str | None:
     client = _client()
     if not client:

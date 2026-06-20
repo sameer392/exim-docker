@@ -22,6 +22,14 @@
       <label for="confirm_password">Confirm password</label>
       <input type="password" id="confirm_password" name="confirm_password" minlength="8" required>
     </div>
+    <div>
+      <label for="tier_id">Rate limit level</label>
+      <select id="tier_id" name="tier_id">
+        {% for tier in tiers %}
+        <option value="{{ tier.id }}" {% if tier.id == 'level2' %}selected{% endif %}>{{ tier.name }}</option>
+        {% endfor %}
+      </select>
+    </div>
     <div class="full">
       <button type="submit" class="btn primary">Create account</button>
     </div>
@@ -37,6 +45,7 @@
       <tr>
         <th>Email</th>
         <th>Maildir</th>
+        <th>Rate limit</th>
         <th>Change password</th>
         <th>Delete</th>
       </tr>
@@ -46,6 +55,20 @@
       <tr>
         <td><strong>{{ user.email }}</strong></td>
         <td><span class="badge {% if user.has_maildir %}ok{% else %}bad{% endif %}">{% if user.has_maildir %}ready{% else %}missing{% endif %}</span></td>
+        <td>
+          <form method="post" action="/users/tier" class="inline-form">
+            <input type="hidden" name="email" value="{{ user.email }}">
+            <select name="tier_id" onchange="this.form.submit()">
+              {% for tier in tiers %}
+              <option value="{{ tier.id }}" {% if user.tier_id == tier.id %}selected{% endif %}>{{ tier.name }}</option>
+              {% endfor %}
+            </select>
+            <noscript><button type="submit" class="btn secondary small">Save</button></noscript>
+          </form>
+          <div class="muted" style="font-size:0.8rem;margin-top:0.25rem;">
+            {{ user.limits.per_10m }}/10m · {{ user.limits.per_1h }}/hr · {{ user.limits.per_1d }}/day
+          </div>
+        </td>
         <td>
           <form method="post" action="/users/password" class="inline-form">
             <input type="hidden" name="email" value="{{ user.email }}">

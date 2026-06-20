@@ -37,7 +37,10 @@ chmod 644 "$DKIM_PATHS_FILE"
 
 # Ensure dynamic files are readable by Exim (uid 100)
 chmod 644 "$CONFIG_DIR"/*.txt 2>/dev/null || true
-for f in domains primary_hostname qualify_domain dkim_selector; do
+for f in domains primary_hostname qualify_domain dkim_selector rate_10m rate_1h rate_1d; do
+    [ -f "$CONFIG_DIR/$f" ] && chmod 644 "$CONFIG_DIR/$f"
+done
+for f in rate_tiers.json rate_assignments.json; do
     [ -f "$CONFIG_DIR/$f" ] && chmod 644 "$CONFIG_DIR/$f"
 done
 
