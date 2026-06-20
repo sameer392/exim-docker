@@ -14,7 +14,7 @@
       <a href="/" class="{% if active == 'dashboard' %}active{% endif %}">Dashboard</a>
       <a href="/domains" class="{% if active == 'domains' %}active{% endif %}">Domains</a>
       <a href="/users" class="{% if active == 'users' %}active{% endif %}">Users</a>
-      <a href="http://localhost:8080" target="_blank" rel="noopener">Webmail</a>
+      <a href="{{ webmail_url }}" target="_blank" rel="noopener">Webmail</a>
       <a href="/logout">Logout</a>
     </div>
   </nav>

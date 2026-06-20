@@ -9,12 +9,19 @@ from pathlib import Path
 from .auth import create_session_token, is_authenticated, verify_admin_password
 from .config import SESSION_COOKIE
 from .services import docker_ops, mail
+from .urls import webmail_url
 
 app = FastAPI(title="Mail Admin Panel", docs_url=None, redoc_url=None)
 
 BASE_DIR = Path(__file__).resolve().parent
 templates = Jinja2Templates(directory=str(BASE_DIR / "templates"))
 app.mount("/static", StaticFiles(directory=str(BASE_DIR / "static")), name="static")
+
+
+def render(request: Request, template: str, status_code: int = 200, **context):
+    context.setdefault("webmail_url", webmail_url(request))
+    context["request"] = request
+    return templates.TemplateResponse(template, context, status_code=status_code)
 
 
 def require_auth(request: Request):
@@ -27,7 +34,7 @@ def require_auth(request: Request):
 async def login_page(request: Request):
     if is_authenticated(request):
         return RedirectResponse("/", status_code=303)
-    return templates.TemplateResponse("login.html", {"request": request, "error": None})
+    return render(request, "login.html", error=None)
 
 
 @app.post("/login")
@@ -36,7 +43,7 @@ async def login_submit(request: Request, password: str = Form(...)):
         response = RedirectResponse("/", status_code=303)
         response.set_cookie(SESSION_COOKIE, create_session_token(), httponly=True, samesite="lax")
         return response
-    return templates.TemplateResponse("login.html", {"request": request, "error": "Invalid password"}, status_code=401)
+    return render(request, "login.html", status_code=401, error="Invalid password")
 
 
 @app.get("/logout")
@@ -52,9 +59,12 @@ async def dashboard(request: Request):
         return redirect
     info = mail.get_server_info()
     services = docker_ops.all_service_status()
-    return templates.TemplateResponse(
+    return render(
+        request,
         "dashboard.html",
-        {"request": request, "info": info, "services": services, "message": request.query_params.get("msg")},
+        info=info,
+        services=services,
+        message=request.query_params.get("msg"),
     )
 
 
@@ -70,17 +80,15 @@ async def domains_page(request: Request):
             record = docker_ops.read_dkim_record(domain, selector)
             if record:
                 dkim_records[domain] = record
-    return templates.TemplateResponse(
+    return render(
+        request,
         "domains.html",
-        {
-            "request": request,
-            "domains": domains,
-            "dkim_records": dkim_records,
-            "selector": selector,
-            "hostname": mail.read_text_file(mail.PRIMARY_HOSTNAME_FILE, ""),
-            "message": request.query_params.get("msg"),
-            "error": request.query_params.get("error"),
-        },
+        domains=domains,
+        dkim_records=dkim_records,
+        selector=selector,
+        hostname=mail.read_text_file(mail.PRIMARY_HOSTNAME_FILE, ""),
+        message=request.query_params.get("msg"),
+        error=request.query_params.get("error"),
     )
 
 
@@ -113,15 +121,13 @@ async def domains_delete(request: Request, domain: str = Form(...)):
 async def users_page(request: Request):
     if redirect := require_auth(request):
         return redirect
-    return templates.TemplateResponse(
+    return render(
+        request,
         "users.html",
-        {
-            "request": request,
-            "users": mail.list_users(),
-            "domains": mail.list_domains(),
-            "message": request.query_params.get("msg"),
-            "error": request.query_params.get("error"),
-        },
+        users=mail.list_users(),
+        domains=mail.list_domains(),
+        message=request.query_params.get("msg"),
+        error=request.query_params.get("error"),
     )
 
 

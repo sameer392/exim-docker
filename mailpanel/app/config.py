@@ -20,3 +20,6 @@ ROUNDCUBE_CONTAINER = os.getenv("ROUNDCUBE_CONTAINER", "roundcube-webmail")
 
 MAIL_UID = 8
 MAIL_GID = 8
+
+WEBMAIL_PORT = os.getenv("WEBMAIL_PORT", "8080")
+PUBLIC_HOST = os.getenv("PUBLIC_HOST", "").strip()
