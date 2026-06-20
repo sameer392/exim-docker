@@ -67,22 +67,8 @@ if [ -f /etc/exim4/dynamic/domains ]; then
     done < /etc/exim4/dynamic/domains
 fi
 
-# Generate self-signed certificates if they don't exist
-if [ ! -f /etc/exim4/exim.crt ]; then
-    echo "Generating Exim SSL certificate..."
-    openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
-        -keyout /etc/exim4/exim.key \
-        -out /etc/exim4/exim.crt \
-        -subj "/CN=${HOSTNAME}/O=Hemochrom/C=US"
-    chmod 640 /etc/exim4/exim.key
-    chmod 644 /etc/exim4/exim.crt
-    chown root:Debian-exim /etc/exim4/exim.key /etc/exim4/exim.crt
-fi
-
-# Ensure certificates are readable by Exim user
-chmod 640 /etc/exim4/exim.key 2>/dev/null || true
-chmod 644 /etc/exim4/exim.crt 2>/dev/null || true
-chown root:Debian-exim /etc/exim4/exim.key /etc/exim4/exim.crt 2>/dev/null || true
+# Install Let's Encrypt or self-signed TLS certificate
+/scripts/setup-ssl.sh
 
 # Render Exim config with resolved hostname/domain values
 /scripts/render-exim-config.sh

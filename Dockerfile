@@ -39,6 +39,7 @@ COPY scripts/setup-exim-config.sh /scripts/setup-exim-config.sh
 COPY scripts/setup-mail.sh /scripts/setup-mail.sh
 COPY scripts/setup-dkim.sh /scripts/setup-dkim.sh
 COPY scripts/render-exim-config.sh /scripts/render-exim-config.sh
+COPY scripts/setup-ssl.sh /scripts/setup-ssl.sh
 COPY supervisord/supervisord-exim.conf /etc/supervisor/conf.d/supervisord.conf
 COPY opendkim/opendkim.conf /etc/opendkim.conf
 COPY opendkim/opendkim-KeyTable /etc/opendkim/KeyTable
@@ -49,7 +50,7 @@ COPY opendkim/opendkim-TrustedHosts /etc/opendkim/TrustedHosts
 RUN mkdir -p /etc/opendkim/keys/${DOMAIN} \
     && chown -R opendkim:opendkim /etc/opendkim
 
-RUN chmod +x /entrypoint.sh /scripts/setup-exim-config.sh /scripts/setup-mail.sh /scripts/setup-dkim.sh /scripts/render-exim-config.sh \
+RUN chmod +x /entrypoint.sh /scripts/setup-exim-config.sh /scripts/setup-mail.sh /scripts/setup-dkim.sh /scripts/render-exim-config.sh /scripts/setup-ssl.sh \
     && mkdir -p /var/log/supervisor
 
 EXPOSE 25 587 465

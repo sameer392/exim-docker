@@ -20,6 +20,8 @@ services:
       - ./data/exim:/etc/exim4/dynamic
       - ./data/passwd:/etc/exim4/passwd
       - ./data/opendkim:/etc/opendkim/keys
+      - ./data/ssl:/etc/exim4/ssl
+      - ./data/letsencrypt:/etc/letsencrypt:ro
       - ./exim/exim4.conf:/etc/exim4/exim4.conf.template:ro
     ports:
       - "25:25"
@@ -40,6 +42,7 @@ services:
     volumes:
       - ./data/mail:/srv/mail
       - ./data/passwd:/etc/dovecot/passwd:ro
+      - ./data/ssl:/etc/dovecot/ssl:ro
       - ./dovecot/conf.d:/etc/dovecot/conf.d:ro
     ports:
       - "143:31143"
@@ -87,6 +90,44 @@ services:
     depends_on:
       - db
       - dovecot
+
+  nginx-acme:
+    image: nginx:alpine
+    container_name: nginx-acme
+    volumes:
+      - ./data/certbot/www:/var/www/certbot:ro
+      - ./certbot/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+    ports:
+      - "80:80"
+    networks:
+      - mailnet
+    restart: unless-stopped
+
+  certbot:
+    image: certbot/certbot:latest
+    container_name: certbot
+    volumes:
+      - ./data/letsencrypt:/etc/letsencrypt
+      - ./data/certbot/www:/var/www/certbot
+      - ./scripts/certbot-deploy-hook.sh:/scripts/deploy-hook.sh:ro
+      - /var/run/docker.sock:/var/run/docker.sock
+      - /usr/bin/docker:/usr/bin/docker:ro
+    environment:
+      - TZ=Asia/Kolkata
+      - CERTBOT_EMAIL=${CERTBOT_EMAIL:-info@hemochrom.com}
+      - CERTBOT_DOMAIN=${HOSTNAME:-smtp0.hemochrom.com}
+    entrypoint: ["/bin/sh", "-c"]
+    command: >
+      trap exit TERM;
+      while :; do
+        certbot renew --quiet --deploy-hook /scripts/deploy-hook.sh;
+        sleep 12h & wait $${!};
+      done
+    depends_on:
+      - nginx-acme
+    networks:
+      - mailnet
+    restart: unless-stopped
 
   mailpanel:
     build:
