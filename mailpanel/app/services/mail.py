@@ -36,7 +36,7 @@ def _read_lines(path: Path) -> list[str]:
 def _write_lines(path: Path, lines: list[str]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text("\n".join(lines) + ("\n" if lines else ""))
-    os.chmod(path, 0o640)
+    os.chmod(path, 0o644)
 
 
 def read_text_file(path: Path, default: str = "") -> str:

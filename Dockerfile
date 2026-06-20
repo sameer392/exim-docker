@@ -33,11 +33,12 @@ RUN mkdir -p /var/spool/exim4/input /var/spool/exim4/db /var/log/exim4 /etc/exim
 
 # Copy configuration files
 COPY exim/update-exim4.conf.conf /etc/exim4/update-exim4.conf.conf
-COPY exim/exim4.conf /etc/exim4/exim4.conf
+COPY exim/exim4.conf /etc/exim4/exim4.conf.template
 COPY scripts/entrypoint-exim.sh /entrypoint.sh
 COPY scripts/setup-exim-config.sh /scripts/setup-exim-config.sh
 COPY scripts/setup-mail.sh /scripts/setup-mail.sh
 COPY scripts/setup-dkim.sh /scripts/setup-dkim.sh
+COPY scripts/render-exim-config.sh /scripts/render-exim-config.sh
 COPY supervisord/supervisord-exim.conf /etc/supervisor/conf.d/supervisord.conf
 COPY opendkim/opendkim.conf /etc/opendkim.conf
 COPY opendkim/opendkim-KeyTable /etc/opendkim/KeyTable
@@ -48,7 +49,7 @@ COPY opendkim/opendkim-TrustedHosts /etc/opendkim/TrustedHosts
 RUN mkdir -p /etc/opendkim/keys/${DOMAIN} \
     && chown -R opendkim:opendkim /etc/opendkim
 
-RUN chmod +x /entrypoint.sh /scripts/setup-exim-config.sh /scripts/setup-mail.sh /scripts/setup-dkim.sh \
+RUN chmod +x /entrypoint.sh /scripts/setup-exim-config.sh /scripts/setup-mail.sh /scripts/setup-dkim.sh /scripts/render-exim-config.sh \
     && mkdir -p /var/log/supervisor
 
 EXPOSE 25 587 465

@@ -37,7 +37,7 @@ $config['imap_host'] = 'ssl://dovecot-mailserver:31993';
 // For example %n = mail.domain.tld, %t = domain.tld
 // To specify different SMTP servers for different IMAP hosts provide an array
 // of IMAP host (no prefix or port) and SMTP server e.g. ['imap.example.com' => 'smtp.example.net']
-$config['smtp_host'] = 'tls://exim-mailserver:25';
+$config['smtp_host'] = 'tls://exim-mailserver:587';
 
 // Database configuration
 $config['db_dsnw'] = 'mysql://roundcube:roundcube_pass@db:3306/roundcubemail';
@@ -145,8 +145,8 @@ $config['enable_threading'] = true;
 
 // Override Docker config - our settings come AFTER the include
 $config['imap_host'] = 'ssl://dovecot-mailserver:31993';
-$config['smtp_host'] = 'tls://exim-mailserver:25';
+$config['smtp_host'] = 'tls://exim-mailserver:587';
 
 // Override Docker config with our settings
 $config['imap_host'] = 'ssl://dovecot-mailserver:31993';
-$config['smtp_host'] = 'tls://exim-mailserver:25';
+$config['smtp_host'] = 'tls://exim-mailserver:587';
