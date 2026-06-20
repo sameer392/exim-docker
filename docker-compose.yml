@@ -32,12 +32,14 @@ services:
     image: dovecot/dovecot:latest
     container_name: dovecot-mailserver
     hostname: smtp0.hemochrom.com
+    # Root required so Dovecot can drop privileges to mail (uid 8) for Exim-owned maildirs
+    user: "0:0"
     environment:
       - TZ=Asia/Kolkata
-      - DOMAIN=hemochrom.com
-      - USER_PASSWORD=Sameer392!
     volumes:
       - ./data/mail:/srv/mail
+      - ./data/passwd:/etc/dovecot/passwd:ro
+      - ./dovecot/conf.d:/etc/dovecot/conf.d:ro
     ports:
       - "143:31143"
       - "993:31993"

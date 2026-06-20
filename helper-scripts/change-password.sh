@@ -69,36 +69,26 @@ if [ -f ./data/passwd ]; then
     chmod 640 ./data/passwd
 fi
 
-# IMPORTANT: Also update docker-compose.yml to prevent entrypoint from overwriting
+# Create maildir for new users
+MAILDIR="./data/mail/${DOMAIN}/${USER}"
+if [ ! -d "$MAILDIR" ]; then
+    echo "Creating maildir: $MAILDIR"
+    mkdir -p "$MAILDIR"
+    chown -R 8:8 "$MAILDIR" 2>/dev/null || chown -R mail:mail "$MAILDIR" 2>/dev/null || true
+    chmod 700 "$MAILDIR"
+fi
+
+# Update docker-compose bootstrap password for default user only
 echo ""
-echo "Updating docker-compose.yml to prevent password reset on restart..."
+echo "Updating docker-compose.yml bootstrap password (default user only)..."
 if grep -q "EMAIL_PASS=" docker-compose.yml; then
-    # Update EMAIL_PASS in docker-compose.yml
-    if [ "$DOMAIN" = "hemochrom.com" ] && [ "$USER" = "info" ]; then
-        # This is the default user, update EMAIL_PASS
+    if [ "$USER" = "info" ] && grep -qxF "$DOMAIN" ./data/exim/domains 2>/dev/null; then
         sed -i "s|EMAIL_PASS=.*|EMAIL_PASS=${NEW_PASSWORD}|" docker-compose.yml
         echo "Updated EMAIL_PASS in docker-compose.yml"
-    fi
-    # Also update Dovecot USER_PASSWORD if it's the same user
-    if grep -q "USER_PASSWORD=" docker-compose.yml; then
-        sed -i "s|USER_PASSWORD=.*|USER_PASSWORD=${NEW_PASSWORD}|" docker-compose.yml
-        echo "Updated USER_PASSWORD in docker-compose.yml"
     fi
 else
     echo "Note: EMAIL_PASS not found in docker-compose.yml"
 fi
-
-# Note about Dovecot
-echo ""
-echo "Note: Dovecot authentication:"
-echo "  - If Dovecot uses passwd-file, it may need separate update"
-echo "  - If Dovecot uses USER_PASSWORD env var, update docker-compose.yml:"
-echo "    environment:"
-echo "      - USER_PASSWORD=$NEW_PASSWORD"
-echo "    Then run: docker compose up -d"
-echo ""
-echo "For now, Exim password is updated. IMAP may work if Dovecot"
-echo "is configured to use the same authentication method."
 
 # Restart services
 echo ""
@@ -113,8 +103,8 @@ echo "Email: $EMAIL_ADDRESS"
 echo "New password: $NEW_PASSWORD"
 echo ""
 echo "The password is now active for:"
-echo "- SMTP authentication (sending emails)"
-echo "- IMAP authentication (receiving emails)"
+echo "- SMTP authentication (Exim)"
+echo "- IMAP authentication (Dovecot — shared passwd file)"
 echo "- Roundcube webmail login"
 echo ""
 echo "You may need to update your email client"
