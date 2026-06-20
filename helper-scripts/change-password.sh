@@ -78,18 +78,6 @@ if [ ! -d "$MAILDIR" ]; then
     chmod 700 "$MAILDIR"
 fi
 
-# Update docker-compose bootstrap password for default user only
-echo ""
-echo "Updating docker-compose.yml bootstrap password (default user only)..."
-if grep -q "EMAIL_PASS=" docker-compose.yml; then
-    if [ "$USER" = "info" ] && grep -qxF "$DOMAIN" ./data/exim/domains 2>/dev/null; then
-        sed -i "s|EMAIL_PASS=.*|EMAIL_PASS=${NEW_PASSWORD}|" docker-compose.yml
-        echo "Updated EMAIL_PASS in docker-compose.yml"
-    fi
-else
-    echo "Note: EMAIL_PASS not found in docker-compose.yml"
-fi
-
 # Restart services
 echo ""
 echo "Restarting mail services..."

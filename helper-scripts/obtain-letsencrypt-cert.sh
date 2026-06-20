@@ -5,8 +5,13 @@ set -e
 
 cd "$(dirname "$0")/.."
 
-DOMAIN="${CERTBOT_DOMAIN:-smtp0.hemochrom.com}"
-EMAIL="${CERTBOT_EMAIL:-info@hemochrom.com}"
+if [ -f .env ]; then
+    [ -z "$HOSTNAME" ] && HOSTNAME=$(grep -E '^HOSTNAME=' .env | cut -d= -f2- | tr -d "'\"")
+    [ -z "$CERTBOT_EMAIL" ] && CERTBOT_EMAIL=$(grep -E '^CERTBOT_EMAIL=' .env | cut -d= -f2- | tr -d "'\"")
+fi
+
+DOMAIN="${HOSTNAME:-smtp0.example.com}"
+EMAIL="${CERTBOT_EMAIL:-admin@example.com}"
 
 echo "Obtaining Let's Encrypt certificate for ${DOMAIN}"
 echo "Email: ${EMAIL}"

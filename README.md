@@ -30,13 +30,11 @@ Each server is configured with a `.env` file (copy from `.env.example`):
 
 | Variable | Description | Example |
 |----------|-------------|---------|
-| `DOMAIN` | Primary mail domain | `example.com` |
-| `HOSTNAME` | SMTP hostname (PTR/MX) | `smtp0.example.com` |
-| `EMAIL_USER` | First mailbox local part | `info` |
-| `EMAIL_PASS` | First mailbox password | `ChangeMe123!` |
+| `HOSTNAME` | SMTP hostname (PTR/MX) and Let's Encrypt TLS cert | `smtp0.example.com` |
 | `ADMIN_PASSWORD` | Mail admin panel login | `ChangeAdminPass!` |
-| `CERTBOT_EMAIL` | Let's Encrypt contact | `info@example.com` |
-| `CERTBOT_DOMAIN` | TLS certificate hostname | `smtp0.example.com` |
+| `CERTBOT_EMAIL` | Let's Encrypt contact email | `admin@example.com` |
+
+Domains and mail accounts are **not** in `.env`. Add domains and users in the admin panel (`:8090`).
 
 ## 🏃 Quick Start
 
@@ -68,11 +66,9 @@ The script will prompt for domain, hostname, passwords, and server IP, then:
 
 ```bash
 ./helper-scripts/install-new-server.sh \
-  --domain cubewebtech.com \
   --hostname smtp0.cubewebtech.com \
-  --email-user info \
-  --email-pass 'YourSecurePass123!' \
   --admin-pass 'YourAdminPass123!' \
+  --certbot-email admin@cubewebtech.com \
   --server-ip 203.0.113.50
 ```
 
@@ -90,13 +86,12 @@ The script will prompt for domain, hostname, passwords, and server IP, then:
    nano .env
    ```
 
-3. **Seed Exim config** (first install only):
+3. **Seed hostname** (first install only; domains via admin panel):
    ```bash
    mkdir -p data/exim data/log data/mail data/ssl data/opendkim data/certbot/www data/letsencrypt
-   echo "example.com" > data/exim/domains
+   echo "# Add domains via admin panel" > data/exim/domains
    echo "smtp0.example.com" > data/exim/primary_hostname
-   echo "example.com" > data/exim/qualify_domain
-   chmod 644 data/exim/*
+   touch data/passwd && chmod 644 data/passwd data/exim/domains data/exim/primary_hostname
    ```
 
 4. **Build and start all services:**
@@ -106,7 +101,7 @@ The script will prompt for domain, hostname, passwords, and server IP, then:
 
 5. **Obtain Let's Encrypt certificate** (after DNS A record is live):
    ```bash
-   CERTBOT_DOMAIN=smtp0.example.com CERTBOT_EMAIL=info@example.com \
+   HOSTNAME=smtp0.example.com CERTBOT_EMAIL=info@example.com \
      ./helper-scripts/obtain-letsencrypt-cert.sh
    ```
 
@@ -117,9 +112,8 @@ The script will prompt for domain, hostname, passwords, and server IP, then:
    ```
 
 7. **Access services:**
-   - **Admin panel**: `http://your-server-ip:8090` (manage domains, users, rate limits, logs)
-   - **Roundcube webmail**: `http://your-server-ip:8080`
-   - Login with: `info@example.com` / password from `.env`
+   - **Admin panel**: `http://your-server-ip:8090` — log in, then create domains and mail accounts
+   - **Roundcube webmail**: `http://your-server-ip:8080` — use accounts created in the admin panel
 
 ## 🖥️ Installing on Additional Servers
 
@@ -310,27 +304,13 @@ Use the provided script to change any email account password:
 
 This script will:
 - Generate the password hash
-- Update Exim password file
-- Update Dovecot configuration
+- Update `data/passwd`
+- Create the maildir if needed
 - Restart mail services automatically
 
-### Method 2: Using `.env` (for initial / bootstrap user only)
+**All accounts** (including the first) should be created via the admin panel or helper scripts — not via `.env`.
 
-1. **Edit `.env`:**
-   ```bash
-   EMAIL_USER=info
-   EMAIL_PASS=YourNewSecurePassword123!
-   ```
-
-2. **Remove existing passwd entry** (if the user already exists), then restart:
-   ```bash
-   rm -f data/passwd
-   docker compose up -d --build
-   ```
-
-**Note:** This only affects the bootstrap user in `EMAIL_USER`. For existing accounts, use Method 1 or the admin panel.
-
-### Method 3: Manual Update (Advanced)
+### Method 2: Manual Update (Advanced)
 
 1. **Generate password hash:**
    ```bash
@@ -352,9 +332,7 @@ This script will:
    docker compose restart mailserver dovecot
    ```
 
-### Method 4: Using Roundcube Webmail (If Enabled)
-
-If password change is enabled in Roundcube:
+### Method 3: Using Roundcube Webmail (If Enabled)
 1. Login to Roundcube webmail
 2. Go to Settings → Password
 3. Enter old password and new password
@@ -569,13 +547,13 @@ Helper scripts are located in `helper-scripts/`:
   ```bash
   ./helper-scripts/install-new-server.sh
   # Or with arguments:
-  ./helper-scripts/install-new-server.sh --domain example.com --hostname smtp0.example.com \
-    --email-user info --email-pass 'Pass123!' --admin-pass 'AdminPass!'
+  ./helper-scripts/install-new-server.sh --hostname smtp0.example.com \
+    --admin-pass 'AdminPass!' --certbot-email admin@example.com
   ```
 
 - **`obtain-letsencrypt-cert.sh`** - Obtain or refresh Let's Encrypt certificate
   ```bash
-  CERTBOT_DOMAIN=smtp0.example.com CERTBOT_EMAIL=info@example.com \
+  HOSTNAME=smtp0.example.com CERTBOT_EMAIL=info@example.com \
     ./helper-scripts/obtain-letsencrypt-cert.sh
   ```
 

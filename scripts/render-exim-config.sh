@@ -18,7 +18,11 @@ read_dynamic() {
 }
 
 PRIMARY_HOSTNAME=$(read_dynamic "$CONFIG_DIR/primary_hostname" "smtp0.example.com")
-QUALIFY_DOMAIN=$(read_dynamic "$CONFIG_DIR/qualify_domain" "example.com")
+QUALIFY_DOMAIN=$(read_dynamic "$CONFIG_DIR/qualify_domain" "")
+if [ -z "$QUALIFY_DOMAIN" ] && [ -f "$CONFIG_DIR/domains" ]; then
+    QUALIFY_DOMAIN=$(grep -vE '^[[:space:]]*(#|$)' "$CONFIG_DIR/domains" | head -1 | tr -d '\n\r')
+fi
+QUALIFY_DOMAIN=${QUALIFY_DOMAIN:-local.invalid}
 DKIM_SELECTOR=$(read_dynamic "$CONFIG_DIR/dkim_selector" "mail")
 
 # Build trusted DKIM key path map (avoids Exim "tainted filename" on dynamic paths)

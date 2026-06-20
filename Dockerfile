@@ -2,8 +2,6 @@ FROM ubuntu:24.04
 
 ENV DEBIAN_FRONTEND=noninteractive
 ENV TZ=Asia/Kolkata
-ENV DOMAIN=hemochrom.com
-ENV HOSTNAME=smtp0.hemochrom.com
 
 # Install Exim4 and required packages (Dovecot is now a separate service)
 RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -21,7 +19,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
 
 # Create necessary directories
-RUN mkdir -p /var/spool/exim4/input /var/spool/exim4/db /var/log/exim4 /etc/exim4 /var/mail/vhosts/${DOMAIN} \
+RUN mkdir -p /var/spool/exim4/input /var/spool/exim4/db /var/log/exim4 /etc/exim4 /var/mail/vhosts \
     && chown -R Debian-exim:Debian-exim /var/spool/exim4 \
     && chmod 755 /var/spool/exim4 \
     && chmod 700 /var/spool/exim4/input \
@@ -47,7 +45,7 @@ COPY opendkim/opendkim-SigningTable /etc/opendkim/SigningTable
 COPY opendkim/opendkim-TrustedHosts /etc/opendkim/TrustedHosts
 
 # Setup DKIM
-RUN mkdir -p /etc/opendkim/keys/${DOMAIN} \
+RUN mkdir -p /etc/opendkim/keys \
     && chown -R opendkim:opendkim /etc/opendkim
 
 RUN chmod +x /entrypoint.sh /scripts/setup-exim-config.sh /scripts/setup-mail.sh /scripts/setup-dkim.sh /scripts/render-exim-config.sh /scripts/setup-ssl.sh \

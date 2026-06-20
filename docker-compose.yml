@@ -9,10 +9,7 @@ services:
     hostname: ${HOSTNAME:-smtp0.example.com}
     environment:
       - TZ=${TZ:-Asia/Kolkata}
-      - DOMAIN=${DOMAIN:-example.com}
       - HOSTNAME=${HOSTNAME:-smtp0.example.com}
-      - EMAIL_USER=${EMAIL_USER:-info}
-      - EMAIL_PASS=${EMAIL_PASS:-ChangeMe123!}
     volumes:
       - ./data/mail:/var/mail/vhosts
       - ./data/spool:/var/spool/exim4
@@ -114,8 +111,7 @@ services:
       - /usr/bin/docker:/usr/bin/docker:ro
     environment:
       - TZ=Asia/Kolkata
-      - CERTBOT_EMAIL=${CERTBOT_EMAIL:-info@example.com}
-      - CERTBOT_DOMAIN=${CERTBOT_DOMAIN:-${HOSTNAME:-smtp0.example.com}}
+      - CERTBOT_EMAIL=${CERTBOT_EMAIL:-admin@example.com}
     entrypoint: ["/bin/sh", "-c"]
     command: >
       trap exit TERM;

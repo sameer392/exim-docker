@@ -3,7 +3,6 @@
 
 CONFIG_DIR=/etc/exim4/dynamic
 DOMAINS_FILE="$CONFIG_DIR/domains"
-DOMAIN=${DOMAIN:-hemochrom.com}
 
 mkdir -p "$CONFIG_DIR"
 
@@ -17,9 +16,9 @@ else
     echo "Using existing DKIM selector: $DKIM_SELECTOR"
 fi
 
-# Fall back to bootstrap domain if domains file is missing
-if [ ! -s "$DOMAINS_FILE" ]; then
-    echo "$DOMAIN" > "$DOMAINS_FILE"
+if [ ! -s "$DOMAINS_FILE" ] || ! grep -qvE '^[[:space:]]*(#|$)' "$DOMAINS_FILE" 2>/dev/null; then
+    echo "No mail domains configured — add domains via admin panel"
+    exit 0
 fi
 
 generate_dkim_for_domain() {
@@ -50,7 +49,6 @@ generate_dkim_for_domain() {
 }
 
 while IFS= read -r line || [ -n "$line" ]; do
-    # Trim whitespace
     domain="${line#"${line%%[![:space:]]*}"}"
     domain="${domain%"${domain##*[![:space:]]}"}"
 

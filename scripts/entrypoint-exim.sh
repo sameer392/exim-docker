@@ -1,18 +1,15 @@
 #!/bin/bash
 set -e
 
-DOMAIN=${DOMAIN:-hemochrom.com}
-HOSTNAME=${HOSTNAME:-smtp0.hemochrom.com}
-EMAIL_USER=${EMAIL_USER:-info}
-EMAIL_PASS=${EMAIL_PASS:-ChangeMe123!}
+HOSTNAME=${HOSTNAME:-smtp0.example.com}
 
-echo "Starting Exim mail server setup for domain: $DOMAIN"
+echo "Starting Exim mail server setup"
 
 # Seed dynamic config files (domains, hostname, qualify_domain)
 /scripts/setup-exim-config.sh
 
-# Create mail directory structure
-mkdir -p /var/mail/vhosts/${DOMAIN}/${EMAIL_USER}
+# Mail storage root (maildirs created per user via admin panel)
+mkdir -p /var/mail/vhosts
 chown -R mail:mail /var/mail/vhosts
 
 # Ensure log directory and files exist
@@ -21,7 +18,7 @@ touch /var/log/exim4/mainlog /var/log/exim4/rejectlog /var/log/exim4/paniclog
 chown Debian-exim:adm /var/log/exim4/mainlog /var/log/exim4/rejectlog /var/log/exim4/paniclog
 chmod 640 /var/log/exim4/mainlog /var/log/exim4/rejectlog /var/log/exim4/paniclog
 
-# Setup mail user password (for Exim)
+# Ensure passwd file exists (accounts added via admin panel)
 /scripts/setup-mail.sh || echo "Warning: setup-mail.sh failed, continuing..."
 
 # Setup DKIM (generates random selector if not set)
@@ -48,7 +45,6 @@ chmod 644 /etc/opendkim/KeyTable /etc/opendkim/SigningTable /etc/opendkim/Truste
 # Set ownership for OpenDKIM directories (but preserve key file permissions)
 chown opendkim:opendkim /etc/opendkim
 chown opendkim:opendkim /etc/opendkim/keys
-chown opendkim:opendkim /etc/opendkim/keys/${DOMAIN}
 
 # Set permissions for DKIM private keys so Exim can read them
 if [ -f /etc/exim4/dynamic/domains ]; then
@@ -88,9 +84,8 @@ if [ -f /etc/exim4/dynamic/domains ]; then
 fi
 
 echo "Exim mail server is running!"
-echo "Domain: $DOMAIN"
 echo "Hostname: $HOSTNAME"
-echo "Email: ${EMAIL_USER}@${DOMAIN}"
+echo "Domains & accounts: admin panel (http://<server-ip>:8090)"
 
 # Start supervisor to manage Exim
 exec /usr/bin/supervisord -c /etc/supervisor/conf.d/supervisord.conf

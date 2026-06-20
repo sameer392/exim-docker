@@ -58,6 +58,10 @@ def add_domain(domain: str) -> None:
         return
     domains.append(domain)
     _write_lines(DOMAINS_FILE, domains)
+    if not read_text_file(QUALIFY_DOMAIN_FILE):
+        QUALIFY_DOMAIN_FILE.parent.mkdir(parents=True, exist_ok=True)
+        QUALIFY_DOMAIN_FILE.write_text(domain + "\n")
+        os.chmod(QUALIFY_DOMAIN_FILE, 0o644)
 
 
 def remove_domain(domain: str) -> None:
@@ -67,6 +71,12 @@ def remove_domain(domain: str) -> None:
         raise ValueError(f"Cannot remove domain with existing users: {domain}")
     domains = [d for d in list_domains() if d != domain]
     _write_lines(DOMAINS_FILE, domains)
+    if read_text_file(QUALIFY_DOMAIN_FILE) == domain:
+        if domains:
+            QUALIFY_DOMAIN_FILE.write_text(domains[0] + "\n")
+            os.chmod(QUALIFY_DOMAIN_FILE, 0o644)
+        elif QUALIFY_DOMAIN_FILE.exists():
+            QUALIFY_DOMAIN_FILE.write_text("")
 
 
 def parse_passwd() -> list[dict]:
