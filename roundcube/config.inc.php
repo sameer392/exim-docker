@@ -152,3 +152,6 @@ $config['smtp_save_to_sent'] = false;
 
 // Behind nginx reverse proxy on port 80
 $config['reverse_proxy'] = true;
+
+// Keep webmail login session for 7 days (minutes)
+$config['session_lifetime'] = 10080;
