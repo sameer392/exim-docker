@@ -12,4 +12,7 @@ docker exec exim-mailserver pkill -HUP -f 'exim4 -bd' 2>/dev/null \
 docker exec dovecot-mailserver doveadm reload 2>/dev/null \
     || docker restart dovecot-mailserver
 
-echo "Mail services reloaded."
+docker exec nginx-acme nginx -s reload 2>/dev/null \
+    || docker restart nginx-acme
+
+echo "Mail services and web proxy reloaded."
