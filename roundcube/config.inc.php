@@ -149,3 +149,6 @@ $config['smtp_host'] = 'tls://exim-mailserver:587';
 
 // Server saves SMTP copies to Sent; avoid duplicate from Roundcube IMAP append.
 $config['smtp_save_to_sent'] = false;
+
+// Behind nginx reverse proxy on port 80
+$config['reverse_proxy'] = true;

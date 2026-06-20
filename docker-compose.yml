@@ -80,8 +80,6 @@ services:
       - ROUNDCUBEMAIL_DB_PASSWORD=roundcube_pass
     volumes:
       - ./roundcube/config.inc.php:/var/www/html/config/config.inc.php:ro
-    ports:
-      - "8080:80"
     networks:
       - mailnet
     restart: unless-stopped
@@ -100,6 +98,8 @@ services:
     networks:
       - mailnet
     restart: unless-stopped
+    depends_on:
+      - roundcube
 
   certbot:
     image: certbot/certbot:latest

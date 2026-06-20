@@ -15,4 +15,7 @@ def public_host(request: Request) -> str:
 def webmail_url(request: Request) -> str:
     host = public_host(request)
     scheme = request.url.scheme if request.url.scheme in ("http", "https") else "http"
-    return f"{scheme}://{host}:{WEBMAIL_PORT}"
+    port = WEBMAIL_PORT
+    if (scheme == "http" and port in ("", "80")) or (scheme == "https" and port in ("", "443")):
+        return f"{scheme}://{host}"
+    return f"{scheme}://{host}:{port}"
