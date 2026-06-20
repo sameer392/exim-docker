@@ -1,0 +1,3 @@
+# Local mail domains — one per line. Lines starting with # are ignored.
+# Copy to data/exim/domains on first setup (entrypoint seeds automatically).
+hemochrom.com

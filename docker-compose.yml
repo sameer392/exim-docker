@@ -17,6 +17,8 @@ services:
       - ./data/mail:/var/mail/vhosts
       - ./data/spool:/var/spool/exim4
       - ./data/log:/var/log/exim4
+      - ./data/exim:/etc/exim4/dynamic
+      - ./data/passwd:/etc/exim4/passwd
       - ./exim/exim4.conf:/etc/exim4/exim4.conf:ro
     ports:
       - "25:25"

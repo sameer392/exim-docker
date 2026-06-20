@@ -8,6 +8,9 @@ EMAIL_PASS=${EMAIL_PASS:-ChangeMe123!}
 
 echo "Starting Exim mail server setup for domain: $DOMAIN"
 
+# Seed dynamic config files (domains, hostname, qualify_domain)
+/scripts/setup-exim-config.sh
+
 # Create mail directory structure
 mkdir -p /var/mail/vhosts/${DOMAIN}/${EMAIL_USER}
 chown -R mail:mail /var/mail/vhosts
@@ -25,10 +28,21 @@ chmod 640 /var/log/exim4/mainlog /var/log/exim4/rejectlog /var/log/exim4/paniclo
 /scripts/setup-dkim.sh
 
 # Read the DKIM selector that was generated
-DKIM_SELECTOR=$(cat /etc/exim4/dkim_selector 2>/dev/null || echo "mail")
+DKIM_SELECTOR=$(cat /etc/exim4/dynamic/dkim_selector 2>/dev/null || echo "mail")
+
+# Ensure OpenDKIM key directories exist for all configured domains
+if [ -f /etc/exim4/dynamic/domains ]; then
+    while IFS= read -r line || [ -n "$line" ]; do
+        domain="${line#"${line%%[![:space:]]*}"}"
+        domain="${domain%"${domain##*[![:space:]]}"}"
+        [ -z "$domain" ] && continue
+        [[ "$domain" == \#* ]] && continue
+        mkdir -p "/etc/opendkim/keys/${domain}"
+        chown opendkim:opendkim "/etc/opendkim/keys/${domain}" 2>/dev/null || true
+    done < /etc/exim4/dynamic/domains
+fi
 
 # Ensure OpenDKIM configuration files exist
-mkdir -p /etc/opendkim/keys/${DOMAIN}
 chmod 644 /etc/opendkim/KeyTable /etc/opendkim/SigningTable /etc/opendkim/TrustedHosts
 
 # Set ownership for OpenDKIM directories (but preserve key file permissions)
@@ -36,12 +50,19 @@ chown opendkim:opendkim /etc/opendkim
 chown opendkim:opendkim /etc/opendkim/keys
 chown opendkim:opendkim /etc/opendkim/keys/${DOMAIN}
 
-# Set permissions for DKIM private key so Exim can read it
-# This MUST be done AFTER chown operations
-if [ -f /etc/opendkim/keys/${DOMAIN}/${DKIM_SELECTOR}.private ]; then
-    chmod 644 /etc/opendkim/keys/${DOMAIN}/${DKIM_SELECTOR}.private
-    chown root:Debian-exim /etc/opendkim/keys/${DOMAIN}/${DKIM_SELECTOR}.private
-    echo "DKIM key permissions set for Exim access (selector: ${DKIM_SELECTOR})"
+# Set permissions for DKIM private keys so Exim can read them
+if [ -f /etc/exim4/dynamic/domains ]; then
+    while IFS= read -r line || [ -n "$line" ]; do
+        domain="${line#"${line%%[![:space:]]*}"}"
+        domain="${domain%"${domain##*[![:space:]]}"}"
+        [ -z "$domain" ] && continue
+        [[ "$domain" == \#* ]] && continue
+        if [ -f "/etc/opendkim/keys/${domain}/${DKIM_SELECTOR}.private" ]; then
+            chmod 644 "/etc/opendkim/keys/${domain}/${DKIM_SELECTOR}.private"
+            chown root:Debian-exim "/etc/opendkim/keys/${domain}/${DKIM_SELECTOR}.private"
+            echo "DKIM key permissions set for ${domain} (selector: ${DKIM_SELECTOR})"
+        fi
+    done < /etc/exim4/dynamic/domains
 fi
 
 # Generate self-signed certificates if they don't exist
