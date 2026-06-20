@@ -6,13 +6,13 @@ services:
       context: .
       dockerfile: Dockerfile
     container_name: exim-mailserver
-    hostname: smtp0.hemochrom.com
+    hostname: ${HOSTNAME:-smtp0.example.com}
     environment:
-      - TZ=Asia/Kolkata
-      - DOMAIN=hemochrom.com
-      - HOSTNAME=smtp0.hemochrom.com
-      - EMAIL_USER=info
-      - EMAIL_PASS=Sameer392!
+      - TZ=${TZ:-Asia/Kolkata}
+      - DOMAIN=${DOMAIN:-example.com}
+      - HOSTNAME=${HOSTNAME:-smtp0.example.com}
+      - EMAIL_USER=${EMAIL_USER:-info}
+      - EMAIL_PASS=${EMAIL_PASS:-ChangeMe123!}
     volumes:
       - ./data/mail:/var/mail/vhosts
       - ./data/spool:/var/spool/exim4
@@ -34,7 +34,7 @@ services:
   dovecot:
     image: dovecot/dovecot:latest
     container_name: dovecot-mailserver
-    hostname: smtp0.hemochrom.com
+    hostname: ${HOSTNAME:-smtp0.example.com}
     # Root required so Dovecot can drop privileges to mail (uid 8) for Exim-owned maildirs
     user: "0:0"
     environment:
@@ -114,8 +114,8 @@ services:
       - /usr/bin/docker:/usr/bin/docker:ro
     environment:
       - TZ=Asia/Kolkata
-      - CERTBOT_EMAIL=${CERTBOT_EMAIL:-info@hemochrom.com}
-      - CERTBOT_DOMAIN=${HOSTNAME:-smtp0.hemochrom.com}
+      - CERTBOT_EMAIL=${CERTBOT_EMAIL:-info@example.com}
+      - CERTBOT_DOMAIN=${CERTBOT_DOMAIN:-${HOSTNAME:-smtp0.example.com}}
     entrypoint: ["/bin/sh", "-c"]
     command: >
       trap exit TERM;

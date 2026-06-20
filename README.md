@@ -16,16 +16,27 @@ A complete, production-ready Docker mail server setup with Exim4, Dovecot, and R
 - **Exim4** - SMTP server with DKIM signing (ports 25, 587, 465)
 - **Dovecot** - IMAP/POP3 server (ports 143, 993, 110, 995)
 - **Roundcube** - Modern webmail interface (port 8080)
+- **Mail Admin Panel** - Web UI for domains, users, rate limits, and logs (port 8090)
+- **Let's Encrypt** - Automatic TLS for SMTP/IMAP via Certbot (port 80 for renewal)
+- **Per-account rate limits** - 3 configurable tiers (10 min / 1 hour / 1 day)
 - **DKIM Signing** - Automatic email authentication with random selector
 - **TLS/SSL Support** - Secure connections on all ports
-- **External SMTP Relay** - Support for authenticated relay from external services
+- **External SMTP Relay** - Support for authenticated relay from external services (WHMCS, apps, etc.)
+- **Multi-server ready** - Each server configured via `.env` (hostname, domain, credentials)
 
-## 📋 Domain Configuration
+## 📋 Configuration Overview
 
-- **Domain**: example.com (replace with your domain)
-- **Hostname**: smtp0.example.com (replace with your hostname)
-- **Default Email**: info@example.com (replace with your email)
-- **Default Password**: ChangeMe123! (⚠️ **CHANGE THIS IMMEDIATELY!**)
+Each server is configured with a `.env` file (copy from `.env.example`):
+
+| Variable | Description | Example |
+|----------|-------------|---------|
+| `DOMAIN` | Primary mail domain | `example.com` |
+| `HOSTNAME` | SMTP hostname (PTR/MX) | `smtp0.example.com` |
+| `EMAIL_USER` | First mailbox local part | `info` |
+| `EMAIL_PASS` | First mailbox password | `ChangeMe123!` |
+| `ADMIN_PASSWORD` | Mail admin panel login | `ChangeAdminPass!` |
+| `CERTBOT_EMAIL` | Let's Encrypt contact | `info@example.com` |
+| `CERTBOT_DOMAIN` | TLS certificate hostname | `smtp0.example.com` |
 
 ## 🏃 Quick Start
 
@@ -33,10 +44,39 @@ A complete, production-ready Docker mail server setup with Exim4, Dovecot, and R
 
 - Docker and Docker Compose installed
   - If Docker is not installed, use: `./helper-scripts/install-docker.sh` (for AlmaLinux/RHEL 9)
-- Server with ports 25, 587, 465, 143, 993, 110, 995, 8080 open
-- Domain DNS access (Cloudflare recommended)
+- Server with ports **25, 80, 587, 465, 8080, 8090** open (plus 143/993 for external IMAP)
+- Domain DNS access (Cloudflare or any DNS provider)
+- **DNS A record** for your SMTP hostname pointing to the server IP (before Let's Encrypt)
 
-### Installation
+### Option A: Automated install (recommended for new servers)
+
+```bash
+git clone https://github.com/sameer392/exim-docker.git
+cd exim-docker
+./helper-scripts/install-new-server.sh
+```
+
+The script will prompt for domain, hostname, passwords, and server IP, then:
+
+1. Create `.env` with your settings
+2. Seed `data/exim/` with hostname and domain
+3. Build and start all Docker services
+4. Obtain a Let's Encrypt certificate
+5. Print a DNS checklist for your domain
+
+**Non-interactive example** (second server, different domain):
+
+```bash
+./helper-scripts/install-new-server.sh \
+  --domain cubewebtech.com \
+  --hostname smtp0.cubewebtech.com \
+  --email-user info \
+  --email-pass 'YourSecurePass123!' \
+  --admin-pass 'YourAdminPass123!' \
+  --server-ip 203.0.113.50
+```
+
+### Option B: Manual install
 
 1. **Clone the repository:**
    ```bash
@@ -44,21 +84,124 @@ A complete, production-ready Docker mail server setup with Exim4, Dovecot, and R
    cd exim-docker
    ```
 
-2. **Build and start all services:**
+2. **Create and edit `.env`:**
+   ```bash
+   cp .env.example .env
+   nano .env
+   ```
+
+3. **Seed Exim config** (first install only):
+   ```bash
+   mkdir -p data/exim data/log data/mail data/ssl data/opendkim data/certbot/www data/letsencrypt
+   echo "example.com" > data/exim/domains
+   echo "smtp0.example.com" > data/exim/primary_hostname
+   echo "example.com" > data/exim/qualify_domain
+   chmod 644 data/exim/*
+   ```
+
+4. **Build and start all services:**
    ```bash
    docker compose up -d --build
    ```
 
-3. **Check service status:**
+5. **Obtain Let's Encrypt certificate** (after DNS A record is live):
+   ```bash
+   CERTBOT_DOMAIN=smtp0.example.com CERTBOT_EMAIL=info@example.com \
+     ./helper-scripts/obtain-letsencrypt-cert.sh
+   ```
+
+6. **Check service status:**
    ```bash
    docker compose ps
    docker compose logs -f
    ```
 
-4. **Access Roundcube webmail:**
-   - Open browser: `http://localhost:8080` (or `http://your-server-ip:8080`)
-   - Login with: `info@example.com`
-   - Password: `ChangeMe123!` (change this immediately!)
+7. **Access services:**
+   - **Admin panel**: `http://your-server-ip:8090` (manage domains, users, rate limits, logs)
+   - **Roundcube webmail**: `http://your-server-ip:8080`
+   - Login with: `info@example.com` / password from `.env`
+
+## 🖥️ Installing on Additional Servers
+
+Each physical or virtual server is a **separate, independent** mail installation. Use the same Git repo, but **never copy the `data/` folder** from another server.
+
+### Per-server checklist
+
+| Step | Action |
+|------|--------|
+| 1 | New VPS with Docker installed |
+| 2 | Clone repo: `git clone https://github.com/sameer392/exim-docker.git` |
+| 3 | Run `./helper-scripts/install-new-server.sh` **or** create a unique `.env` |
+| 4 | Use a **fresh** `data/` directory (installer creates this automatically) |
+| 5 | Point DNS A record: `smtp0.yourdomain.com` → new server IP |
+| 6 | Add MX, SPF, DKIM, DMARC for each domain on that server |
+| 7 | Configure apps (WHMCS, etc.) with the **new** hostname and credentials |
+
+### Two-server example
+
+| | Server 1 | Server 2 |
+|---|---|---|
+| IP | `155.138.231.235` | `203.0.113.50` |
+| Hostname | `smtp0.hemochrom.com` | `smtp0.cubewebtech.com` |
+| Domains | `hemochrom.com`, `cubehostindia.com` | `cubewebtech.com` |
+| Admin panel | `http://155.138.231.235:8090` | `http://203.0.113.50:8090` |
+| Webmail | `http://155.138.231.235:8080` | `http://203.0.113.50:8080` |
+
+### Do NOT copy between servers
+
+| Path | Reason |
+|------|--------|
+| `data/opendkim/` | DKIM private keys are unique per server |
+| `data/letsencrypt/` | TLS certs are tied to hostname and server |
+| `data/passwd` | Mailbox passwords |
+| `data/exim/dkim_selector` | Random selector per installation |
+| `data/ssl/` | Active TLS certificate copies |
+
+**Safe to copy:** the Git repository, `docker-compose.yml`, scripts, and templates. Configure each server with its own `.env`.
+
+### Adding domains and users on a new server
+
+**Via admin panel** (`http://server-ip:8090`):
+
+- **Domains** — add domains, view DKIM DNS records
+- **Users** — create mailboxes, assign rate limit levels
+- **Rate Limits** — edit 3 tiers (per 10 min / 1 hour / 1 day)
+- **Logs** — view live Exim logs
+
+**Via CLI:**
+
+```bash
+./helper-scripts/add-domain.sh anotherdomain.com
+./helper-scripts/add-mail-user.sh noreply@anotherdomain.com 'Password123!'
+./helper-scripts/change-password.sh user@domain.com 'NewPassword123!'
+```
+
+### WHMCS / external app SMTP settings
+
+| Setting | Value |
+|---------|-------|
+| SMTP Host | `smtp0.example.com` (your `HOSTNAME`) |
+| SMTP Port | `587` |
+| Encryption | **TLS** (STARTTLS) — not SSL on port 587 |
+| Authentication | Required (LOGIN or PLAIN) |
+| Username | Full email, e.g. `noreply@example.com` |
+| Password | Mailbox password from admin panel |
+
+Alternative: port **465** with encryption **SSL**.
+
+## ⏱️ Rate Limits
+
+Per-account outbound sending limits are enforced at SMTP time (each recipient counts as 1).
+
+Three tiers are configurable in the admin panel (**Rate Limits**):
+
+| Level | Default limits |
+|-------|----------------|
+| Level 1 — Low | 20 / 10 min · 80 / hour · 400 / day |
+| Level 2 — Medium | 50 / 10 min · 200 / hour · 1000 / day |
+| Level 3 — High | 150 / 10 min · 750 / hour · 5000 / day |
+
+Assign a level per user under **Users**. When a limit is exceeded, the client receives `Rate limit exceeded` and the message is rejected (not queued).
 
 ## 🌐 DNS Configuration in Cloudflare
 
@@ -86,12 +229,12 @@ A complete, production-ready Docker mail server setup with Exim4, Dovecot, and R
 The DKIM selector is randomly generated for security. To get the current selector and public key:
 
 ```bash
-docker exec exim-mailserver sh -c "DKIM_SELECTOR=\$(cat /etc/exim4/dkim_selector) && echo \"DKIM Selector: \$DKIM_SELECTOR\" && echo \"DNS Record Name: \$DKIM_SELECTOR._domainkey\" && echo \"\" && cat /etc/opendkim/keys/example.com/\$DKIM_SELECTOR.txt"
+docker exec exim-mailserver sh -c 'SELECTOR=$(cat /etc/exim4/dynamic/dkim_selector) && echo "DKIM Selector: $SELECTOR" && echo "DNS Record Name: $SELECTOR._domainkey" && echo "" && cat /etc/opendkim/keys/example.com/$SELECTOR.txt'
 ```
 
 Or check the selector file:
 ```bash
-docker exec exim-mailserver cat /etc/exim4/dkim_selector
+docker exec exim-mailserver cat /etc/exim4/dynamic/dkim_selector
 ```
 
 Then add the TXT record in Cloudflare:
@@ -100,7 +243,7 @@ Then add the TXT record in Cloudflare:
 - **Content**: Copy the full DKIM record from the command above (starts with `v=DKIM1;`)
 - **Proxy**: DNS only (grey cloud)
 
-**Note**: The selector is randomly generated on first setup and stored in `/etc/exim4/dkim_selector`. It persists across container restarts unless you delete the keys directory.
+**Note**: The selector is randomly generated on first setup and stored in `data/exim/dkim_selector`. It persists across container restarts unless you delete `data/opendkim/`.
 
 ### 5. DMARC Record (Recommended)
 - **Type**: TXT
@@ -118,6 +261,7 @@ Then add the TXT record in Cloudflare:
 | Port | Service | Protocol | Description |
 |------|---------|----------|-------------|
 | 25 | SMTP | STARTTLS | Mail Transfer Agent |
+| 80 | nginx-acme | HTTP | Let's Encrypt ACME challenges |
 | 587 | SMTP | STARTTLS | Submission (authenticated) |
 | 465 | SMTPS | Implicit TLS | Secure SMTP |
 | 143 | IMAP | STARTTLS | Mail retrieval |
@@ -125,6 +269,7 @@ Then add the TXT record in Cloudflare:
 | 110 | POP3 | STARTTLS | Mail retrieval |
 | 995 | POP3S | Implicit TLS | Secure POP3 |
 | 8080 | Roundcube | HTTP | Webmail interface |
+| 8090 | Mail Admin | HTTP | Domains, users, rate limits, logs |
 
 ## 📧 Email Client Configuration
 
@@ -169,21 +314,21 @@ This script will:
 - Update Dovecot configuration
 - Restart mail services automatically
 
-### Method 2: Using Environment Variable (For Initial Setup)
+### Method 2: Using `.env` (for initial / bootstrap user only)
 
-1. **Edit `docker-compose.yml`:**
-   ```yaml
-   environment:
-     - EMAIL_PASS=YourNewSecurePassword123!
+1. **Edit `.env`:**
+   ```bash
+   EMAIL_USER=info
+   EMAIL_PASS=YourNewSecurePassword123!
    ```
 
-2. **Rebuild and restart:**
+2. **Remove existing passwd entry** (if the user already exists), then restart:
    ```bash
-   docker compose down
+   rm -f data/passwd
    docker compose up -d --build
    ```
 
-**Note:** This method only works for the default user set in `EMAIL_USER`. For existing accounts, use Method 1 or 3.
+**Note:** This only affects the bootstrap user in `EMAIL_USER`. For existing accounts, use Method 1 or the admin panel.
 
 ### Method 3: Manual Update (Advanced)
 
@@ -219,24 +364,31 @@ If password change is enabled in Roundcube:
 
 ## 👥 Adding More Email Accounts
 
-1. **Edit `docker-compose.yml`** to add new user:
-   ```yaml
-   environment:
-     - EMAIL_USER=newuser
-     - EMAIL_PASS=NewUserPassword123!
-   ```
+### Via admin panel (recommended)
 
-2. **Or manually add user:**
-   ```bash
-   docker exec exim-mailserver bash
-   NEW_USER="newuser"
-   NEW_PASS="password123"
-   PASS_HASH=$(openssl passwd -1 "$NEW_PASS")
-   echo "${NEW_USER}@example.com:${PASS_HASH}" >> /etc/exim4/passwd
-   mkdir -p /var/mail/vhosts/example.com/${NEW_USER}
-   chown -R mail:mail /var/mail/vhosts/example.com/${NEW_USER}
-   chmod 700 /var/mail/vhosts/example.com/${NEW_USER}
-   ```
+1. Open `http://your-server-ip:8090`
+2. Go to **Domains** — add the domain if needed
+3. Go to **Users** — create account and assign a rate limit level
+
+### Via helper script
+
+```bash
+./helper-scripts/add-domain.sh anotherdomain.com
+./helper-scripts/add-mail-user.sh sales@anotherdomain.com 'SecurePass123!'
+```
+
+### Via CLI inside container (advanced)
+
+```bash
+docker exec exim-mailserver bash
+NEW_USER="newuser"
+NEW_PASS="password123"
+PASS_HASH=$(openssl passwd -1 "$NEW_PASS")
+echo "${NEW_USER}@example.com:${PASS_HASH}" >> /etc/exim4/passwd
+mkdir -p /var/mail/vhosts/example.com/${NEW_USER}
+chown -R mail:mail /var/mail/vhosts/example.com/${NEW_USER}
+chmod 700 /var/mail/vhosts/example.com/${NEW_USER}
+```
 
 ## 🔄 External SMTP Relay Support
 
@@ -303,7 +455,7 @@ openssl s_client -connect localhost:993
 
 ### Get Current DKIM Selector and Public Key
 ```bash
-docker exec exim-mailserver sh -c "DKIM_SELECTOR=\$(cat /etc/exim4/dkim_selector) && echo \"Selector: \$DKIM_SELECTOR\" && echo \"DNS Name: \$DKIM_SELECTOR._domainkey\" && cat /etc/opendkim/keys/example.com/\$DKIM_SELECTOR.txt"
+docker exec exim-mailserver sh -c 'SELECTOR=$(cat /etc/exim4/dynamic/dkim_selector) && echo "Selector: $SELECTOR" && echo "DNS Name: $SELECTOR._domainkey" && cat /etc/opendkim/keys/example.com/$SELECTOR.txt'
 ```
 
 ### Check DKIM Key Permissions
@@ -331,6 +483,11 @@ docker exec exim-mailserver ps aux | grep exim4
 - Check that DNS record is properly formatted (no line breaks in `p=` value)
 - Wait 5-10 minutes after DNS changes for propagation
 
+#### "Rate limit exceeded"
+- Per-account sending limits are enforced (10 min / 1 hour / 1 day)
+- Adjust tiers in admin panel → **Rate Limits**, or assign a higher level per user → **Users**
+- Each `RCPT TO` (recipient) counts as one message toward the limit
+
 #### "TLS connection was non-properly terminated"
 - This is often harmless - Gmail may close connections abruptly after accepting email
 - Check if emails are actually being delivered (look for "250 2.0.0 OK" in logs)
@@ -341,28 +498,32 @@ docker exec exim-mailserver ps aux | grep exim4
 
 ## 📁 Data Persistence
 
-Data is stored in mounted volumes:
-- `./data/mail` - Email messages (Maildir format)
-- `./data/spool` - Exim spool directory
-- `./data/log` - Log files
-- `./data/db` - Roundcube database
+Data is stored in mounted volumes under `./data/`:
 
-### Automatic Creation
+| Path | Contents |
+|------|----------|
+| `data/mail` | Email messages (Maildir format) |
+| `data/spool` | Exim spool directory |
+| `data/log` | Exim mainlog, rejectlog, paniclog |
+| `data/db` | Roundcube MariaDB database |
+| `data/exim` | Domains, hostname, DKIM selector, rate limits |
+| `data/opendkim` | DKIM private keys (per domain) |
+| `data/ssl` | Active TLS certificate for Exim/Dovecot |
+| `data/letsencrypt` | Let's Encrypt certificates |
+| `data/passwd` | Mailbox credentials (shared by Exim and Dovecot) |
 
-**Yes, the `data/` folder is created automatically!** When you clone from Git and run `docker compose up`, Docker will automatically create the `data/` directory structure when mounting volumes. You don't need to create it manually.
+### Fresh install on a new server
 
-The `data/` folder is excluded from Git (in `.gitignore`) because it contains:
-- Runtime data (emails, logs, database)
-- Large files that shouldn't be in version control
-- Privacy-sensitive information
+Docker creates empty `data/` subdirectories on first run. For a clean install:
 
-**On a new server:**
-1. Clone the repository
-2. Run `docker compose up -d --build`
-3. Docker automatically creates `data/` with proper permissions
-4. Services start and populate the directories
+```bash
+# Do not copy data/ from another server
+./helper-scripts/install-new-server.sh
+```
 
-**Backup these directories** before major updates or container removal.
+Or manually seed `data/exim/` before `docker compose up` (see Option B in Quick Start).
+
+The `data/` folder is in `.gitignore` (runtime data, secrets, large files). **Back up `data/`** before major updates or server migration.
 
 ## 🔒 Security Notes
 
@@ -371,9 +532,9 @@ The `data/` folder is excluded from Git (in `.gitignore`) because it contains:
 3. **Keep Docker images updated** regularly
 4. **Configure firewall** to only allow necessary ports from trusted sources
 5. **Monitor logs** for suspicious activity
-6. **Use proper SSL certificates** in production (replace self-signed certs)
+6. **Use Let's Encrypt TLS** (included; renews automatically via Certbot)
 7. **Enable fail2ban** or similar for brute-force protection
-8. **Regular backups** of mail data and configuration
+8. **Regular backups** of `data/` (mail, passwd, opendkim, letsencrypt)
 
 ## 🛑 Stopping the Services
 
@@ -388,19 +549,45 @@ docker compose down -v
 ## 📝 Configuration Files
 
 Key configuration files:
-- `exim/exim4.conf` - Main Exim configuration
-- `roundcube/config.inc.php` - Roundcube configuration
+- `.env` / `.env.example` - Per-server domain, hostname, passwords (not committed to Git)
 - `docker-compose.yml` - Docker services orchestration
-- `Dockerfile` - Exim container build instructions
+- `exim/exim4.conf` - Exim configuration template (rendered at startup)
+- `data/exim/` - Runtime hostname, domains, DKIM paths, rate limits
+- `roundcube/config.inc.php` - Roundcube configuration
+- `mailpanel/` - Admin panel (FastAPI) source
 - `scripts/entrypoint-exim.sh` - Exim startup script
-- `scripts/setup-mail.sh` - Mail user setup script
-- `scripts/setup-dkim.sh` - DKIM key generation script
-- `opendkim/` - OpenDKIM configuration files
-- `supervisord/` - Supervisord configuration files
+- `scripts/setup-ssl.sh` - Let's Encrypt / self-signed TLS setup
+- `scripts/render-exim-config.sh` - Renders Exim config from dynamic files
+- `helper-scripts/install-new-server.sh` - Automated new-server installer
+- `helper-scripts/obtain-letsencrypt-cert.sh` - Manual SSL certificate obtain
 
 ## 🛠️ Helper Scripts
 
 Helper scripts are located in `helper-scripts/`:
+
+- **`install-new-server.sh`** - Automated install on a new server (creates `.env`, starts services, obtains SSL)
+  ```bash
+  ./helper-scripts/install-new-server.sh
+  # Or with arguments:
+  ./helper-scripts/install-new-server.sh --domain example.com --hostname smtp0.example.com \
+    --email-user info --email-pass 'Pass123!' --admin-pass 'AdminPass!'
+  ```
+
+- **`obtain-letsencrypt-cert.sh`** - Obtain or refresh Let's Encrypt certificate
+  ```bash
+  CERTBOT_DOMAIN=smtp0.example.com CERTBOT_EMAIL=info@example.com \
+    ./helper-scripts/obtain-letsencrypt-cert.sh
+  ```
+
+- **`add-domain.sh`** - Add a mail domain and generate DKIM keys
+  ```bash
+  ./helper-scripts/add-domain.sh anotherdomain.com
+  ```
+
+- **`add-mail-user.sh`** - Create a mailbox on any configured domain
+  ```bash
+  ./helper-scripts/add-mail-user.sh user@domain.com 'Password123!'
+  ```
 
 - **`install-docker.sh`** - Install Docker and Docker Compose on AlmaLinux/RHEL 9
   ```bash
@@ -474,4 +661,4 @@ For issues and questions:
 ---
 
 **Repository**: [sameer392/exim-docker](https://github.com/sameer392/exim-docker)  
-**Last Updated**: January 2026
+**Last Updated**: June 2026
