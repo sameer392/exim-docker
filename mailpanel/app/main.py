@@ -8,7 +8,7 @@ from pathlib import Path
 
 from .auth import create_session_token, is_authenticated, verify_admin_password
 from .config import SESSION_COOKIE
-from .services import docker_ops, logs, mail, rate_limits
+from .services import docker_ops, dns as dns_service, logs, mail, rate_limits
 from .urls import webmail_url
 
 app = FastAPI(title="Mail Admin Panel", docs_url=None, redoc_url=None)
@@ -90,19 +90,20 @@ async def domains_page(request: Request):
         return redirect
     domains = mail.list_domains()
     selector = mail.read_text_file(mail.DKIM_SELECTOR_FILE, "")
-    dkim_records = {}
+    hostname = mail.read_text_file(mail.PRIMARY_HOSTNAME_FILE, "")
+    domain_dns = {}
     for domain in domains:
-        if selector:
-            record = docker_ops.read_dkim_record(domain, selector)
-            if record:
-                dkim_records[domain] = record
+        dkim_raw = docker_ops.read_dkim_record(domain, selector) if selector else None
+        domain_dns[domain] = dns_service.domain_dns_records(
+            domain, hostname, selector, dkim_raw
+        )
     return render(
         request,
         "domains.html",
         domains=domains,
-        dkim_records=dkim_records,
+        domain_dns=domain_dns,
         selector=selector,
-        hostname=mail.read_text_file(mail.PRIMARY_HOSTNAME_FILE, ""),
+        hostname=hostname,
         message=request.query_params.get("msg"),
         error=request.query_params.get("error"),
     )

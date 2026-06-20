@@ -174,17 +174,86 @@ form.inline { display: inline; }
 .login-card form { margin-top: 1.5rem; }
 .login-card .btn { width: 100%; margin-top: 1rem; }
 
-.dkim-block { margin-bottom: 1.25rem; }
-.dkim-block pre {
-  background: var(--surface2);
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  padding: 0.75rem;
+.dns-domain-block { margin-bottom: 2rem; }
+.dns-domain-block:last-child { margin-bottom: 0; }
+.dns-table-wrap {
+  width: 100%;
+  max-width: 100%;
   overflow-x: auto;
-  font-size: 0.8rem;
-  white-space: pre-wrap;
-  word-break: break-all;
 }
+.dns-table {
+  table-layout: fixed;
+  width: 100%;
+}
+.dns-table th:nth-child(1),
+.dns-table td:nth-child(1) { width: 14%; }
+.dns-table th:nth-child(2),
+.dns-table td:nth-child(2) { width: 8%; }
+.dns-table th:nth-child(3),
+.dns-table td:nth-child(3) { width: 22%; }
+.dns-table th:nth-child(4),
+.dns-table td:nth-child(4) { width: 56%; }
+.dns-table td {
+  vertical-align: top;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+.dns-label {
+  display: inline-block;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--muted);
+}
+.dns-value {
+  display: block;
+  max-width: 100%;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  font-size: 0.8rem;
+  line-height: 1.5;
+}
+.dns-priority {
+  font-size: 0.85rem;
+  color: var(--muted);
+  overflow-wrap: anywhere;
+}
+.copy-field {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.35rem;
+  max-width: 100%;
+  min-width: 0;
+}
+.dns-table .copy-field code {
+  display: block;
+  flex: 1;
+  min-width: 0;
+  max-width: 100%;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  white-space: normal;
+}
+.copy-field code { flex: 1; min-width: 0; }
+.copy-btn {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--surface2);
+  color: var(--muted);
+  cursor: pointer;
+}
+.copy-btn:hover { color: var(--text); border-color: var(--primary); }
+.copy-btn.copied { color: var(--success); border-color: var(--success); }
+.dns-hint { margin: 0.75rem 0 0; font-size: 0.85rem; }
 code {
   background: var(--surface2);
   padding: 0.15rem 0.4rem;
@@ -267,8 +336,21 @@ select {
 
 @media (max-width: 700px) {
   .card-header { flex-direction: column; align-items: flex-start; }
-  table, thead, tbody, th, td, tr { display: block; }
-  th { display: none; }
-  td { border: none; padding: 0.4rem 0; }
-  tr { border-bottom: 1px solid var(--border); padding: 0.75rem 0; }
+  table:not(.dns-table),
+  table:not(.dns-table) thead,
+  table:not(.dns-table) tbody,
+  table:not(.dns-table) th,
+  table:not(.dns-table) td,
+  table:not(.dns-table) tr { display: block; }
+  table:not(.dns-table) th { display: none; }
+  table:not(.dns-table) td { border: none; padding: 0.4rem 0; }
+  table:not(.dns-table) tr { border-bottom: 1px solid var(--border); padding: 0.75rem 0; }
+  .dns-table th:nth-child(1),
+  .dns-table td:nth-child(1),
+  .dns-table th:nth-child(2),
+  .dns-table td:nth-child(2),
+  .dns-table th:nth-child(3),
+  .dns-table td:nth-child(3),
+  .dns-table th:nth-child(4),
+  .dns-table td:nth-child(4) { width: auto; }
 }
