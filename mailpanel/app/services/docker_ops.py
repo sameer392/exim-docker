@@ -75,7 +75,9 @@ def reload_exim() -> str:
         container = client.containers.get(EXIM_CONTAINER)
     except NotFound:
         raise RuntimeError(f"Container not found: {EXIM_CONTAINER}")
-    exit_code, output = container.exec_run("exim4 -reload")
+    exit_code, output = container.exec_run(
+        "sh -c 'kill -HUP $(cat /var/run/exim4/exim.pid)'"
+    )
     text = output.decode("utf-8", errors="replace").strip()
     if exit_code != 0:
         raise RuntimeError(text or "Exim reload failed")
