@@ -25,6 +25,8 @@ Thumbs.db
 # IDE files
 .vscode/
 .cursor/
+!.cursor/skills/
+!.cursor/skills/**
 .idea/
 *.sublime-*
 
