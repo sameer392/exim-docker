@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}Mail Admin{% endblock %}</title>
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+  {% if show_nav is not defined or show_nav %}
+  <nav class="nav">
+    <div class="nav-brand">Mail Admin</div>
+    <div class="nav-links">
+      <a href="/" class="{% if active == 'dashboard' %}active{% endif %}">Dashboard</a>
+      <a href="/domains" class="{% if active == 'domains' %}active{% endif %}">Domains</a>
+      <a href="/users" class="{% if active == 'users' %}active{% endif %}">Users</a>
+      <a href="http://localhost:8080" target="_blank" rel="noopener">Webmail</a>
+      <a href="/logout">Logout</a>
+    </div>
+  </nav>
+  {% endif %}
+
+  <main class="container">
+    {% if message %}
+    <div class="alert success">{{ message }}</div>
+    {% endif %}
+    {% if error %}
+    <div class="alert error">{{ error }}</div>
+    {% endif %}
+    {% block content %}{% endblock %}
+  </main>
+</body>
+</html>

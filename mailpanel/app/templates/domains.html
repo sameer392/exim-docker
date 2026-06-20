@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+{% set active = 'domains' %}
+{% block title %}Domains — Mail Admin{% endblock %}
+{% block content %}
+<h1>Domains</h1>
+
+<section class="card">
+  <h2>Add domain</h2>
+  <form method="post" action="/domains/add" class="inline-form">
+    <input type="text" name="domain" placeholder="example.com" required pattern="[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}">
+    <button type="submit" class="btn primary">Add domain</button>
+  </form>
+  <p class="muted">DKIM keys are generated automatically. Add DNS records after creating a domain.</p>
+</section>
+
+<section class="card">
+  <h2>Configured domains</h2>
+  {% if domains %}
+  <table>
+    <thead>
+      <tr><th>Domain</th><th>Actions</th></tr>
+    </thead>
+    <tbody>
+      {% for domain in domains %}
+      <tr>
+        <td><strong>{{ domain }}</strong></td>
+        <td>
+          <form method="post" action="/domains/delete" class="inline" onsubmit="return confirm('Delete {{ domain }}? Remove all users first.')">
+            <input type="hidden" name="domain" value="{{ domain }}">
+            <button type="submit" class="btn danger small">Delete</button>
+          </form>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <p class="muted">No domains configured yet.</p>
+  {% endif %}
+</section>
+
+{% if dkim_records %}
+<section class="card">
+  <h2>DKIM DNS records</h2>
+  <p class="muted">Add these TXT records in your DNS (DNS-only, not proxied).</p>
+  {% for domain, record in dkim_records.items() %}
+  <div class="dkim-block">
+    <h3>{{ domain }}</h3>
+    <p><strong>Name:</strong> <code>{{ selector }}._domainkey.{{ domain }}</code></p>
+    <pre>{{ record }}</pre>
+  </div>
+  {% endfor %}
+</section>
+{% endif %}
+
+<section class="card">
+  <h2>DNS checklist (per domain)</h2>
+  <ul class="checklist">
+    <li>MX → <code>{{ hostname or 'smtp0.yourdomain.com' }}</code></li>
+    <li>SPF TXT → <code>v=spf1 mx a:{{ hostname or 'smtp0.yourdomain.com' }} ~all</code></li>
+    <li>DKIM TXT → see above</li>
+    <li>DMARC TXT → <code>v=DMARC1; p=none; rua=mailto:admin@yourdomain</code></li>
+  </ul>
+</section>
+{% endblock %}

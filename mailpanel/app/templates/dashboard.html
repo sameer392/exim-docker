@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% set active = 'dashboard' %}
+{% block title %}Dashboard — Mail Admin{% endblock %}
+{% block content %}
+<h1>Dashboard</h1>
+
+<div class="grid stats">
+  <div class="card stat">
+    <div class="stat-label">Domains</div>
+    <div class="stat-value">{{ info.domain_count }}</div>
+  </div>
+  <div class="card stat">
+    <div class="stat-label">Email accounts</div>
+    <div class="stat-value">{{ info.user_count }}</div>
+  </div>
+  <div class="card stat">
+    <div class="stat-label">SMTP hostname</div>
+    <div class="stat-value small">{{ info.primary_hostname }}</div>
+  </div>
+  <div class="card stat">
+    <div class="stat-label">DKIM selector</div>
+    <div class="stat-value small">{{ info.dkim_selector }}</div>
+  </div>
+</div>
+
+<section class="card">
+  <div class="card-header">
+    <h2>Services</h2>
+    <form method="post" action="/services/restart" onsubmit="return confirm('Restart mailserver and dovecot?')">
+      <button type="submit" class="btn secondary">Restart mail services</button>
+    </form>
+  </div>
+  <table>
+    <thead>
+      <tr><th>Container</th><th>Status</th></tr>
+    </thead>
+    <tbody>
+      {% for svc in services %}
+      <tr>
+        <td>{{ svc.name }}</td>
+        <td><span class="badge {% if svc.running %}ok{% else %}bad{% endif %}">{{ svc.status }}</span></td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</section>
+
+<section class="card">
+  <h2>Quick links</h2>
+  <div class="actions">
+    <a href="/domains" class="btn primary">Manage domains</a>
+    <a href="/users" class="btn primary">Manage users</a>
+    <a href="http://localhost:8080" target="_blank" class="btn secondary">Open Roundcube webmail</a>
+  </div>
+</section>
+{% endblock %}

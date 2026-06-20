@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+{% set active = 'users' %}
+{% block title %}Users — Mail Admin{% endblock %}
+{% block content %}
+<h1>Email accounts</h1>
+
+<section class="card">
+  <h2>Create account</h2>
+  {% if not domains %}
+  <p class="alert error">Add a domain first before creating users.</p>
+  {% else %}
+  <form method="post" action="/users/add" class="form-grid">
+    <div>
+      <label for="email">Email address</label>
+      <input type="email" id="email" name="email" placeholder="user@hemochrom.com" required>
+    </div>
+    <div>
+      <label for="password">Password</label>
+      <input type="password" id="password" name="password" minlength="8" required>
+    </div>
+    <div>
+      <label for="confirm_password">Confirm password</label>
+      <input type="password" id="confirm_password" name="confirm_password" minlength="8" required>
+    </div>
+    <div class="full">
+      <button type="submit" class="btn primary">Create account</button>
+    </div>
+  </form>
+  {% endif %}
+</section>
+
+<section class="card">
+  <h2>Existing accounts</h2>
+  {% if users %}
+  <table>
+    <thead>
+      <tr>
+        <th>Email</th>
+        <th>Maildir</th>
+        <th>Change password</th>
+        <th>Delete</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for user in users %}
+      <tr>
+        <td><strong>{{ user.email }}</strong></td>
+        <td><span class="badge {% if user.has_maildir %}ok{% else %}bad{% endif %}">{% if user.has_maildir %}ready{% else %}missing{% endif %}</span></td>
+        <td>
+          <form method="post" action="/users/password" class="inline-form">
+            <input type="hidden" name="email" value="{{ user.email }}">
+            <input type="password" name="password" placeholder="New password" minlength="8" required>
+            <input type="password" name="confirm_password" placeholder="Confirm" minlength="8" required>
+            <button type="submit" class="btn secondary small">Update</button>
+          </form>
+        </td>
+        <td>
+          <form method="post" action="/users/delete" class="inline" onsubmit="return confirm('Delete {{ user.email }}?')">
+            <input type="hidden" name="email" value="{{ user.email }}">
+            <button type="submit" class="btn danger small">Delete</button>
+          </form>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <p class="muted">No email accounts yet.</p>
+  {% endif %}
+</section>
+{% endblock %}

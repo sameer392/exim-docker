@@ -87,6 +87,28 @@ services:
       - db
       - dovecot
 
+  mailpanel:
+    build:
+      context: ./mailpanel
+      dockerfile: Dockerfile
+    container_name: mail-admin
+    environment:
+      - TZ=Asia/Kolkata
+      - ADMIN_PASSWORD=${ADMIN_PASSWORD:-ChangeAdminPass!}
+      - ADMIN_SECRET=${ADMIN_SECRET:-change-this-secret-in-production}
+      - DATA_DIR=/data
+    volumes:
+      - ./data:/data
+      - /var/run/docker.sock:/var/run/docker.sock
+    ports:
+      - "8090:8000"
+    networks:
+      - mailnet
+    restart: unless-stopped
+    depends_on:
+      - mailserver
+      - dovecot
+
 networks:
   mailnet:
     driver: bridge

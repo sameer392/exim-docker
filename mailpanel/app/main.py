@@ -1,0 +1,186 @@
+from urllib.parse import quote
+
+from fastapi import Depends, FastAPI, Form, Request
+from fastapi.responses import HTMLResponse, RedirectResponse
+from fastapi.staticfiles import StaticFiles
+from fastapi.templating import Jinja2Templates
+from pathlib import Path
+
+from .auth import create_session_token, is_authenticated, verify_admin_password
+from .config import SESSION_COOKIE
+from .services import docker_ops, mail
+
+app = FastAPI(title="Mail Admin Panel", docs_url=None, redoc_url=None)
+
+BASE_DIR = Path(__file__).resolve().parent
+templates = Jinja2Templates(directory=str(BASE_DIR / "templates"))
+app.mount("/static", StaticFiles(directory=str(BASE_DIR / "static")), name="static")
+
+
+def require_auth(request: Request):
+    if not is_authenticated(request):
+        return RedirectResponse("/login", status_code=303)
+    return None
+
+
+@app.get("/login", response_class=HTMLResponse)
+async def login_page(request: Request):
+    if is_authenticated(request):
+        return RedirectResponse("/", status_code=303)
+    return templates.TemplateResponse("login.html", {"request": request, "error": None})
+
+
+@app.post("/login")
+async def login_submit(request: Request, password: str = Form(...)):
+    if verify_admin_password(password):
+        response = RedirectResponse("/", status_code=303)
+        response.set_cookie(SESSION_COOKIE, create_session_token(), httponly=True, samesite="lax")
+        return response
+    return templates.TemplateResponse("login.html", {"request": request, "error": "Invalid password"}, status_code=401)
+
+
+@app.get("/logout")
+async def logout():
+    response = RedirectResponse("/login", status_code=303)
+    response.delete_cookie(SESSION_COOKIE)
+    return response
+
+
+@app.get("/", response_class=HTMLResponse)
+async def dashboard(request: Request):
+    if redirect := require_auth(request):
+        return redirect
+    info = mail.get_server_info()
+    services = docker_ops.all_service_status()
+    return templates.TemplateResponse(
+        "dashboard.html",
+        {"request": request, "info": info, "services": services, "message": request.query_params.get("msg")},
+    )
+
+
+@app.get("/domains", response_class=HTMLResponse)
+async def domains_page(request: Request):
+    if redirect := require_auth(request):
+        return redirect
+    domains = mail.list_domains()
+    selector = mail.read_text_file(mail.DKIM_SELECTOR_FILE, "")
+    dkim_records = {}
+    for domain in domains:
+        if selector:
+            record = docker_ops.read_dkim_record(domain, selector)
+            if record:
+                dkim_records[domain] = record
+    return templates.TemplateResponse(
+        "domains.html",
+        {
+            "request": request,
+            "domains": domains,
+            "dkim_records": dkim_records,
+            "selector": selector,
+            "hostname": mail.read_text_file(mail.PRIMARY_HOSTNAME_FILE, ""),
+            "message": request.query_params.get("msg"),
+            "error": request.query_params.get("error"),
+        },
+    )
+
+
+@app.post("/domains/add")
+async def domains_add(request: Request, domain: str = Form(...)):
+    if redirect := require_auth(request):
+        return redirect
+    try:
+        mail.add_domain(domain)
+        docker_ops.run_setup_dkim()
+        docker_ops.restart_mail_services()
+        return RedirectResponse(f"/domains?msg=Domain+{domain}+added", status_code=303)
+    except Exception as exc:
+        return RedirectResponse(f"/domains?error={quote(str(exc))}", status_code=303)
+
+
+@app.post("/domains/delete")
+async def domains_delete(request: Request, domain: str = Form(...)):
+    if redirect := require_auth(request):
+        return redirect
+    try:
+        mail.remove_domain(domain)
+        docker_ops.restart_mail_services()
+        return RedirectResponse(f"/domains?msg=Domain+{domain}+removed", status_code=303)
+    except Exception as exc:
+        return RedirectResponse(f"/domains?error={quote(str(exc))}", status_code=303)
+
+
+@app.get("/users", response_class=HTMLResponse)
+async def users_page(request: Request):
+    if redirect := require_auth(request):
+        return redirect
+    return templates.TemplateResponse(
+        "users.html",
+        {
+            "request": request,
+            "users": mail.list_users(),
+            "domains": mail.list_domains(),
+            "message": request.query_params.get("msg"),
+            "error": request.query_params.get("error"),
+        },
+    )
+
+
+@app.post("/users/add")
+async def users_add(
+    request: Request,
+    email: str = Form(...),
+    password: str = Form(...),
+    confirm_password: str = Form(...),
+):
+    if redirect := require_auth(request):
+        return redirect
+    if password != confirm_password:
+        return RedirectResponse("/users?error=Passwords+do+not+match", status_code=303)
+    try:
+        mail.upsert_user(email, password)
+        docker_ops.restart_mail_services()
+        return RedirectResponse(f"/users?msg=User+{email}+saved", status_code=303)
+    except Exception as exc:
+        return RedirectResponse(f"/users?error={quote(str(exc))}", status_code=303)
+
+
+@app.post("/users/password")
+async def users_password(
+    request: Request,
+    email: str = Form(...),
+    password: str = Form(...),
+    confirm_password: str = Form(...),
+):
+    if redirect := require_auth(request):
+        return redirect
+    if password != confirm_password:
+        return RedirectResponse("/users?error=Passwords+do+not+match", status_code=303)
+    try:
+        mail.upsert_user(email, password)
+        docker_ops.restart_mail_services()
+        return RedirectResponse(f"/users?msg=Password+updated+for+{email}", status_code=303)
+    except Exception as exc:
+        return RedirectResponse(f"/users?error={quote(str(exc))}", status_code=303)
+
+
+@app.post("/users/delete")
+async def users_delete(request: Request, email: str = Form(...)):
+    if redirect := require_auth(request):
+        return redirect
+    try:
+        mail.delete_user(email)
+        docker_ops.restart_mail_services()
+        return RedirectResponse(f"/users?msg=User+{email}+deleted", status_code=303)
+    except Exception as exc:
+        return RedirectResponse(f"/users?error={quote(str(exc))}", status_code=303)
+
+
+@app.post("/services/restart")
+async def services_restart(request: Request):
+    if redirect := require_auth(request):
+        return redirect
+    try:
+        names = docker_ops.restart_mail_services()
+        return RedirectResponse(f"/?msg=Restarted:+{names}", status_code=303)
+    except Exception as exc:
+        return RedirectResponse(f"/?error={quote(str(exc))}", status_code=303)
