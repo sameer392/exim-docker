@@ -11,11 +11,17 @@ A complete, production-ready Docker mail server setup with Exim4, Dovecot, and R
   cd exim-docker
   ```
 
+## 📚 Documentation
+
+Extended guides for production, scaling, ports, security, and webmail options:
+
+**[docs/](docs/README.md)** — production roadmap, port reference, OX App Suite vs Roundcube, backups, security checklist
+
 ## 🚀 Features
 
 - **Exim4** - SMTP server with DKIM signing (ports 25, 587, 465)
 - **Dovecot** - IMAP/POP3 server (ports 143, 993, 110, 995)
-- **Roundcube** - Modern webmail interface (port 8080)
+- **Roundcube** - Webmail via HTTPS (port 443; see [docs/ports-and-services.md](docs/ports-and-services.md))
 - **Mail Admin Panel** - Web UI for domains, users, rate limits, and logs (port 8090)
 - **Let's Encrypt** - Automatic TLS for SMTP/IMAP via Certbot (port 80 for renewal)
 - **Per-account rate limits** - 3 configurable tiers (10 min / 1 hour / 1 day)
