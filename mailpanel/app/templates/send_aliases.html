@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+{% set active = 'send_aliases' %}
+{% block title %}Send aliases — Mail Admin{% endblock %}
+{% block content %}
+<h1>Send aliases</h1>
+
+<p class="muted">
+  Allow an authenticated SMTP account to send mail with a different <strong>From</strong> address.
+  Example: log in as <code>noreply@cubehostindia.com</code> but send as <code>admin@cubehostindia.com</code> (for WHMCS, apps, etc.).
+  Send-only aliases do not receive mail unless you also create a mailbox for that address.
+</p>
+
+<section class="card">
+  <h2>Add send alias</h2>
+  {% if not users %}
+  <p class="alert error">Create at least one email account before adding send aliases.</p>
+  {% else %}
+  <form method="post" action="/send-aliases/add" class="form-grid">
+    <div>
+      <label for="alias">Send as (From address)</label>
+      <input type="email" id="alias" name="alias" placeholder="admin@cubehostindia.com" required>
+      <small class="muted">Address shown to recipients; domain must be configured on this server.</small>
+    </div>
+    <div>
+      <label for="auth_user">Authenticate as (SMTP login)</label>
+      <select id="auth_user" name="auth_user" required>
+        {% for user in users %}
+        <option value="{{ user.email }}">{{ user.email }}</option>
+        {% endfor %}
+      </select>
+      <small class="muted">Account used for SMTP username/password on port 587.</small>
+    </div>
+    <div class="full">
+      <button type="submit" class="btn primary">Add send alias</button>
+    </div>
+  </form>
+  {% endif %}
+</section>
+
+<section class="card">
+  <h2>Configured send aliases</h2>
+  {% if aliases %}
+  <table>
+    <thead>
+      <tr>
+        <th>Send as (From)</th>
+        <th>SMTP login</th>
+        <th>Delete</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for row in aliases %}
+      <tr>
+        <td><code>{{ row.alias }}</code></td>
+        <td><code>{{ row.auth_user }}</code></td>
+        <td>
+          <form method="post" action="/send-aliases/delete" class="inline-form"
+                onsubmit="return confirm('Remove send alias {{ row.alias }}?');">
+            <input type="hidden" name="alias" value="{{ row.alias }}">
+            <button type="submit" class="btn danger small">Remove</button>
+          </form>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <p class="muted">No send aliases configured. Only exact From = login is allowed for SMTP submission.</p>
+  {% endif %}
+</section>
+{% endblock %}

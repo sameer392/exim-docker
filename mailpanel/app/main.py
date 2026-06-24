@@ -8,7 +8,7 @@ from pathlib import Path
 
 from .auth import create_session_token, is_authenticated, verify_admin_password
 from .config import SESSION_COOKIE
-from .services import docker_ops, dns as dns_service, logs, mail, rate_limits
+from .services import docker_ops, dns as dns_service, logs, mail, rate_limits, send_aliases
 from .urls import webmail_url
 
 app = FastAPI(title="Mail Admin Panel", docs_url=None, redoc_url=None)
@@ -197,6 +197,7 @@ async def users_delete(request: Request, email: str = Form(...)):
     try:
         mail.delete_user(email)
         rate_limits.remove_user_assignment(email)
+        send_aliases.remove_for_user(email)
         rate_limits.sync_lookup_files()
         docker_ops.restart_mail_services()
         return RedirectResponse(f"/users?msg=User+{email}+deleted", status_code=303)
@@ -218,6 +219,49 @@ async def users_tier(
         return RedirectResponse(f"/users?msg=Rate+limit+updated+for+{email}", status_code=303)
     except Exception as exc:
         return RedirectResponse(f"/users?error={quote(str(exc))}", status_code=303)
+
+
+@app.get("/send-aliases", response_class=HTMLResponse)
+async def send_aliases_page(request: Request):
+    if redirect := require_auth(request):
+        return redirect
+    send_aliases.ensure_defaults()
+    return render(
+        request,
+        "send_aliases.html",
+        aliases=send_aliases.list_aliases(),
+        users=mail.list_users(),
+        message=request.query_params.get("msg"),
+        error=request.query_params.get("error"),
+    )
+
+
+@app.post("/send-aliases/add")
+async def send_aliases_add(
+    request: Request,
+    alias: str = Form(...),
+    auth_user: str = Form(...),
+):
+    if redirect := require_auth(request):
+        return redirect
+    try:
+        send_aliases.add_alias(alias, auth_user)
+        docker_ops.apply_send_aliases()
+        return RedirectResponse(f"/send-aliases?msg=Send+alias+{alias}+added", status_code=303)
+    except Exception as exc:
+        return RedirectResponse(f"/send-aliases?error={quote(str(exc))}", status_code=303)
+
+
+@app.post("/send-aliases/delete")
+async def send_aliases_delete(request: Request, alias: str = Form(...)):
+    if redirect := require_auth(request):
+        return redirect
+    try:
+        send_aliases.remove_alias(alias)
+        docker_ops.apply_send_aliases()
+        return RedirectResponse(f"/send-aliases?msg=Send+alias+{alias}+removed", status_code=303)
+    except Exception as exc:
+        return RedirectResponse(f"/send-aliases?error={quote(str(exc))}", status_code=303)
 
 
 @app.get("/rate-limits", response_class=HTMLResponse)
