@@ -116,12 +116,23 @@ input:focus {
   font-weight: 600;
   cursor: pointer;
   text-decoration: none;
-  color: white;
+  color: #fff;
+  background: var(--surface2);
 }
-.btn.primary { background: var(--primary); }
+.btn.primary { background: var(--primary); color: #fff; }
 .btn.primary:hover { background: var(--primary-hover); }
-.btn.secondary { background: var(--surface2); color: var(--text); border: 1px solid var(--border); }
-.btn.danger { background: var(--danger); }
+.btn.secondary {
+  background: var(--surface2);
+  color: var(--text);
+  border: 1px solid var(--border);
+}
+.btn.secondary:hover {
+  background: var(--primary);
+  color: #fff;
+  border-color: var(--primary);
+}
+.btn.danger { background: var(--danger); color: #fff; }
+.btn.danger:hover { background: #dc2626; }
 .btn.small { padding: 0.4rem 0.7rem; font-size: 0.8rem; }
 
 .inline-form {

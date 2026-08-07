@@ -25,7 +25,7 @@
       <tr>
         <td><strong>{{ domain }}</strong></td>
         <td class="actions-cell">
-          <button type="button" class="btn small" data-show-dns="{{ domain }}">View DNS</button>
+          <button type="button" class="btn secondary small" data-show-dns="{{ domain }}">View DNS</button>
           <form method="post" action="/domains/delete" class="inline" onsubmit="return confirm('Delete {{ domain }}? Remove all users first.')">
             <input type="hidden" name="domain" value="{{ domain }}">
             <button type="submit" class="btn danger small">Delete</button>
