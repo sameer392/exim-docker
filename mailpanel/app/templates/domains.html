@@ -24,7 +24,8 @@
       {% for domain in domains %}
       <tr>
         <td><strong>{{ domain }}</strong></td>
-        <td>
+        <td class="actions-cell">
+          <button type="button" class="btn small" data-show-dns="{{ domain }}">View DNS</button>
           <form method="post" action="/domains/delete" class="inline" onsubmit="return confirm('Delete {{ domain }}? Remove all users first.')">
             <input type="hidden" name="domain" value="{{ domain }}">
             <button type="submit" class="btn danger small">Delete</button>
@@ -40,11 +41,21 @@
 </section>
 
 {% if domain_dns %}
-<section class="card">
+<section class="card" id="dns-section">
   <h2>DNS records</h2>
-  <p class="muted">Copy these into your DNS panel for each domain. Use <strong>DNS only</strong> (grey cloud in Cloudflare) — do not proxy mail records.</p>
+  <p class="muted">Select a domain to view its DNS records. Use <strong>DNS only</strong> (grey cloud in Cloudflare) — do not proxy mail records.</p>
+
+  <div class="dns-selector">
+    <label for="dns-domain-select">Domain</label>
+    <select id="dns-domain-select">
+      {% for domain in domain_dns.keys() %}
+      <option value="{{ domain }}" {% if loop.first %}selected{% endif %}>{{ domain }}</option>
+      {% endfor %}
+    </select>
+  </div>
+
   {% for domain, records in domain_dns.items() %}
-  <div class="dns-domain-block">
+  <div class="dns-domain-block" data-domain="{{ domain }}" {% if not loop.first %}hidden{% endif %}>
     <h3>{{ domain }}</h3>
     <div class="dns-table-wrap">
     <table class="dns-table">
@@ -105,4 +116,5 @@
 {% endblock %}
 {% block scripts %}
 <script src="/static/copy.js"></script>
+<script src="/static/dns-select.js"></script>
 {% endblock %}

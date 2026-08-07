@@ -254,6 +254,28 @@ form.inline { display: inline; }
 .copy-btn:hover { color: var(--text); border-color: var(--primary); }
 .copy-btn.copied { color: var(--success); border-color: var(--success); }
 .dns-hint { margin: 0.75rem 0 0; font-size: 0.85rem; }
+.dns-selector {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin: 1rem 0 1.25rem;
+  flex-wrap: wrap;
+}
+.dns-selector label {
+  font-weight: 600;
+  margin: 0;
+}
+.dns-selector select {
+  min-width: 16rem;
+  max-width: 100%;
+}
+.dns-domain-block[hidden] { display: none !important; }
+.actions-cell {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
 code {
   background: var(--surface2);
   padding: 0.15rem 0.4rem;
