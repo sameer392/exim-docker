@@ -7,9 +7,12 @@ cd "$(dirname "$0")/.."
 
 # Prefer .env over the shell's HOSTNAME (bash always sets HOSTNAME to the OS name).
 if [ -f .env ]; then
-    ENV_HOSTNAME=$(grep -E '^HOSTNAME=' .env | cut -d= -f2- | tr -d "'\"" | tr -d '\r')
+    ENV_HOSTNAME=$(grep -E '^(MAIL_HOSTNAME|HOSTNAME)=' .env | head -1 | cut -d= -f2- | tr -d "'\"" | tr -d '\r')
+    # Prefer MAIL_HOSTNAME if present
+    ENV_MAIL=$(grep -E '^MAIL_HOSTNAME=' .env | cut -d= -f2- | tr -d "'\"" | tr -d '\r')
     ENV_EMAIL=$(grep -E '^CERTBOT_EMAIL=' .env | cut -d= -f2- | tr -d "'\"" | tr -d '\r')
-    [ -n "$ENV_HOSTNAME" ] && HOSTNAME="$ENV_HOSTNAME"
+    [ -n "$ENV_MAIL" ] && HOSTNAME="$ENV_MAIL"
+    [ -z "$ENV_MAIL" ] && [ -n "$ENV_HOSTNAME" ] && HOSTNAME="$ENV_HOSTNAME"
     [ -n "$ENV_EMAIL" ] && CERTBOT_EMAIL="$ENV_EMAIL"
 fi
 

@@ -6,10 +6,10 @@ services:
       context: .
       dockerfile: Dockerfile
     container_name: exim-mailserver
-    hostname: ${HOSTNAME:-smtp0.example.com}
+    hostname: ${MAIL_HOSTNAME:-smtp0.example.com}
     environment:
       - TZ=${TZ:-Asia/Kolkata}
-      - HOSTNAME=${HOSTNAME:-smtp0.example.com}
+      - HOSTNAME=${MAIL_HOSTNAME:-smtp0.example.com}
     volumes:
       - ./data/mail:/var/mail/vhosts
       - ./data/spool:/var/spool/exim4
@@ -31,7 +31,7 @@ services:
   dovecot:
     image: dovecot/dovecot:latest
     container_name: dovecot-mailserver
-    hostname: ${HOSTNAME:-smtp0.example.com}
+    hostname: ${MAIL_HOSTNAME:-smtp0.example.com}
     # Root required so Dovecot can drop privileges to mail (uid 8) for Exim-owned maildirs
     user: "0:0"
     environment:
