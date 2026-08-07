@@ -1,7 +1,7 @@
 # Main Exim4 configuration
 # This file is included by update-exim4.conf
 
-primary_hostname = smtp0.hemochrom.com
+primary_hostname = mailman101.smtp24x7.com
 domainlist local_domains = hemochrom.com
 domainlist relay_to_domains =
 hostlist relay_from_hosts = 127.0.0.1 : ::1

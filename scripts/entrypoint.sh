@@ -2,7 +2,7 @@
 set -e
 
 DOMAIN=${DOMAIN:-hemochrom.com}
-HOSTNAME=${HOSTNAME:-smtp0.hemochrom.com}
+HOSTNAME=${HOSTNAME:-mailman101.smtp24x7.com}
 EMAIL_USER=${EMAIL_USER:-info}
 EMAIL_PASS=${EMAIL_PASS:-ChangeMe123!}
 

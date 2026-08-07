@@ -20,7 +20,7 @@ Each mail protocol uses **its own standard port**. Webmail and the admin panel a
 
 ### Client configuration examples
 
-Use your `HOSTNAME` from `.env` (e.g. `smtp0.hemochrom.com`).
+Use your `HOSTNAME` from `.env` (e.g. `mailman101.smtp24x7.com`).
 
 **Thunderbird / Outlook / mobile app:**
 

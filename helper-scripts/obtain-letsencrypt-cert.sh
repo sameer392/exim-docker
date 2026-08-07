@@ -5,9 +5,12 @@ set -e
 
 cd "$(dirname "$0")/.."
 
+# Prefer .env over the shell's HOSTNAME (bash always sets HOSTNAME to the OS name).
 if [ -f .env ]; then
-    [ -z "$HOSTNAME" ] && HOSTNAME=$(grep -E '^HOSTNAME=' .env | cut -d= -f2- | tr -d "'\"")
-    [ -z "$CERTBOT_EMAIL" ] && CERTBOT_EMAIL=$(grep -E '^CERTBOT_EMAIL=' .env | cut -d= -f2- | tr -d "'\"")
+    ENV_HOSTNAME=$(grep -E '^HOSTNAME=' .env | cut -d= -f2- | tr -d "'\"" | tr -d '\r')
+    ENV_EMAIL=$(grep -E '^CERTBOT_EMAIL=' .env | cut -d= -f2- | tr -d "'\"" | tr -d '\r')
+    [ -n "$ENV_HOSTNAME" ] && HOSTNAME="$ENV_HOSTNAME"
+    [ -n "$ENV_EMAIL" ] && CERTBOT_EMAIL="$ENV_EMAIL"
 fi
 
 DOMAIN="${HOSTNAME:-smtp0.example.com}"

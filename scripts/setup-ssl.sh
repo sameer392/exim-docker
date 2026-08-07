@@ -5,7 +5,7 @@
 set -e
 
 SSL_DIR="${SSL_DIR:-/etc/exim4/ssl}"
-HOSTNAME="${HOSTNAME:-smtp0.hemochrom.com}"
+HOSTNAME="${HOSTNAME:-mailman101.smtp24x7.com}"
 LE_DIR="/etc/letsencrypt/live/${HOSTNAME}"
 
 mkdir -p "$SSL_DIR"

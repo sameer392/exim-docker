@@ -142,7 +142,7 @@ Each physical or virtual server is a **separate, independent** mail installation
 | | Server 1 | Server 2 |
 |---|---|---|
 | IP | `155.138.231.235` | `203.0.113.50` |
-| Hostname | `smtp0.hemochrom.com` | `smtp0.cubewebtech.com` |
+| Hostname | `mailman101.smtp24x7.com` | `smtp0.cubewebtech.com` |
 | Domains | `hemochrom.com`, `cubehostindia.com` | `cubewebtech.com` |
 | Admin panel | `http://155.138.231.235:8090` | `http://203.0.113.50:8090` |
 | Webmail | `http://155.138.231.235:8080` | `http://203.0.113.50:8080` |
