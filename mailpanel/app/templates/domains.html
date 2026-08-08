@@ -44,14 +44,36 @@
 <section class="card" id="smtp-allow-section">
   <h2>SMTP allow IPs</h2>
   <p class="muted">
-    Only these IPs may <strong>authenticate and send</strong> mail for the selected domain (WHMCS, apps, etc.).
+    Control who may authenticate and send mail via SMTP (ports 587/465).
     <strong>Roundcube webmail</strong> on this server is always allowed via the Docker network.
-    Leave a domain empty to allow sending from any IP (less secure).
-    Incoming mail on port 25 is not affected.
+    Incoming mail on port 25 is never blocked by these rules.
   </p>
 
+  <form method="post" action="/domains/smtp-allow/mode" class="smtp-mode-form">
+    <fieldset class="smtp-mode-fieldset">
+      <legend>Global SMTP policy</legend>
+      <label class="smtp-mode-option">
+        <input type="radio" name="mode" value="any" {% if smtp_allow_mode == 'any' %}checked{% endif %}>
+        <span>
+          <strong>Any IP</strong>
+          <small class="muted">Anyone may try SMTP. If a domain has IPs listed below, only those IPs (plus webmail) may send for that domain. Domains with an empty list stay open.</small>
+        </span>
+      </label>
+      <label class="smtp-mode-option">
+        <input type="radio" name="mode" value="allowlist_only" {% if smtp_allow_mode == 'allowlist_only' %}checked{% endif %}>
+        <span>
+          <strong>Allowlisted IPs only</strong>
+          <small class="muted">SMTP AUTH and sending only from IPs listed for your domains (plus webmail). Domains with no IPs = webmail only. Stolen passwords cannot send from unknown IPs.</small>
+        </span>
+      </label>
+    </fieldset>
+    <button type="submit" class="btn primary small">Save SMTP policy</button>
+  </form>
+
+  <hr class="smtp-allow-divider">
+
   <div class="dns-selector">
-    <label for="smtp-allow-domain-select">Domain</label>
+    <label for="smtp-allow-domain-select">Domain IP lists</label>
     <select id="smtp-allow-domain-select">
       {% for domain in domains %}
       <option value="{{ domain }}" {% if loop.first %}selected{% endif %}>{{ domain }}</option>
@@ -91,7 +113,13 @@
       </tbody>
     </table>
     {% else %}
-    <p class="muted">No IP restriction — any host can SMTP-auth as users of <strong>{{ domain }}</strong>.</p>
+    <p class="muted">
+      {% if smtp_allow_mode == 'allowlist_only' %}
+      No IPs listed — under <strong>Allowlisted IPs only</strong>, only webmail can send as users of <strong>{{ domain }}</strong>.
+      {% else %}
+      No IP restriction for this domain — any host can SMTP-auth as users of <strong>{{ domain }}</strong> (global policy is Any IP).
+      {% endif %}
+    </p>
     {% endif %}
   </div>
   {% endfor %}

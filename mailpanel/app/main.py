@@ -104,6 +104,7 @@ async def domains_page(request: Request):
         domains=domains,
         domain_dns=domain_dns,
         smtp_allow_ips=smtp_allow.list_allow_ips(),
+        smtp_allow_mode=smtp_allow.get_mode(),
         selector=selector,
         hostname=hostname,
         message=request.query_params.get("msg"),
@@ -133,6 +134,19 @@ async def domains_delete(request: Request, domain: str = Form(...)):
         smtp_allow.remove_domain(domain)
         docker_ops.restart_mail_services()
         return RedirectResponse(f"/domains?msg=Domain+{domain}+removed", status_code=303)
+    except Exception as exc:
+        return RedirectResponse(f"/domains?error={quote(str(exc))}", status_code=303)
+
+
+@app.post("/domains/smtp-allow/mode")
+async def domains_smtp_allow_mode(request: Request, mode: str = Form(...)):
+    if redirect := require_auth(request):
+        return redirect
+    try:
+        smtp_allow.set_mode(mode)
+        docker_ops.apply_smtp_allow()
+        label = "Any+IP" if mode == "any" else "Allowlisted+IPs+only"
+        return RedirectResponse(f"/domains?msg=SMTP+policy+updated:+{label}", status_code=303)
     except Exception as exc:
         return RedirectResponse(f"/domains?error={quote(str(exc))}", status_code=303)
 
