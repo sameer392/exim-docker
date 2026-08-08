@@ -40,6 +40,64 @@
   {% endif %}
 </section>
 
+{% if domains %}
+<section class="card" id="smtp-allow-section">
+  <h2>SMTP allow IPs</h2>
+  <p class="muted">
+    Only these IPs may <strong>authenticate and send</strong> mail for the selected domain (WHMCS, apps, etc.).
+    <strong>Roundcube webmail</strong> on this server is always allowed via the Docker network.
+    Leave a domain empty to allow sending from any IP (less secure).
+    Incoming mail on port 25 is not affected.
+  </p>
+
+  <div class="dns-selector">
+    <label for="smtp-allow-domain-select">Domain</label>
+    <select id="smtp-allow-domain-select">
+      {% for domain in domains %}
+      <option value="{{ domain }}" {% if loop.first %}selected{% endif %}>{{ domain }}</option>
+      {% endfor %}
+    </select>
+  </div>
+
+  {% for domain in domains %}
+  <div class="smtp-allow-block" data-domain="{{ domain }}" {% if not loop.first %}hidden{% endif %}>
+    <h3>{{ domain }}</h3>
+    <form method="post" action="/domains/smtp-allow/add" class="inline-form">
+      <input type="hidden" name="domain" value="{{ domain }}">
+      <input type="text" name="ip" placeholder="203.0.113.50 or 203.0.113.0/24" required
+             pattern="^(\d{1,3}\.){3}\d{1,3}(/\d{1,2})?$" title="IPv4 address or CIDR">
+      <button type="submit" class="btn primary small">Add IP</button>
+    </form>
+    {% set ips = smtp_allow_ips.get(domain, []) %}
+    {% if ips %}
+    <table class="smtp-allow-table">
+      <thead>
+        <tr><th>Allowed IP / CIDR</th><th>Remove</th></tr>
+      </thead>
+      <tbody>
+        {% for ip in ips %}
+        <tr>
+          <td><code>{{ ip }}</code></td>
+          <td>
+            <form method="post" action="/domains/smtp-allow/delete" class="inline"
+                  onsubmit="return confirm('Remove {{ ip }} from {{ domain }}?');">
+              <input type="hidden" name="domain" value="{{ domain }}">
+              <input type="hidden" name="ip" value="{{ ip }}">
+              <button type="submit" class="btn danger small">Remove</button>
+            </form>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <p class="muted">No IP restriction — any host can SMTP-auth as users of <strong>{{ domain }}</strong>.</p>
+    {% endif %}
+  </div>
+  {% endfor %}
+</section>
+{% endif %}
+
 {% if domain_dns %}
 <section class="card" id="dns-section">
   <h2>DNS records</h2>

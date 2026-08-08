@@ -16,6 +16,8 @@ RATE_1H_FILE = DATA_DIR / "exim" / "rate_1h"
 RATE_1D_FILE = DATA_DIR / "exim" / "rate_1d"
 SEND_ALIASES_JSON = DATA_DIR / "exim" / "send_aliases.json"
 SEND_ALIASES_FILE = DATA_DIR / "exim" / "send_aliases"
+SMTP_ALLOW_JSON = DATA_DIR / "exim" / "smtp_allow_ips.json"
+SMTP_ALLOW_FILE = DATA_DIR / "exim" / "smtp_allow"
 
 ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", "ChangeAdminPass!")
 ADMIN_SECRET = os.getenv("ADMIN_SECRET", "change-me-in-production")

@@ -1,40 +1,44 @@
 (function () {
-  const select = document.getElementById("dns-domain-select");
-  if (!select) return;
+  function wireSelect(selectId, blockSelector) {
+    const select = document.getElementById(selectId);
+    if (!select) return;
 
-  const blocks = Array.from(document.querySelectorAll(".dns-domain-block[data-domain]"));
+    const blocks = Array.from(document.querySelectorAll(blockSelector));
 
-  function showDomain(domain, scroll) {
-    blocks.forEach((block) => {
-      block.hidden = block.getAttribute("data-domain") !== domain;
-    });
-    if (select.value !== domain) {
-      select.value = domain;
+    function showDomain(domain, scrollTo) {
+      blocks.forEach((block) => {
+        block.hidden = block.getAttribute("data-domain") !== domain;
+      });
+      if (select.value !== domain) {
+        select.value = domain;
+      }
+      if (scrollTo) {
+        const el = document.getElementById(scrollTo);
+        if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+      }
     }
-    if (scroll) {
-      const section = document.getElementById("dns-section");
-      if (section) section.scrollIntoView({ behavior: "smooth", block: "start" });
+
+    select.addEventListener("change", () => showDomain(select.value, null));
+
+    const params = new URLSearchParams(window.location.search);
+    const fromUrl = params.get("domain");
+    if (fromUrl && blocks.some((b) => b.getAttribute("data-domain") === fromUrl)) {
+      showDomain(fromUrl, null);
+    } else {
+      showDomain(select.value, null);
     }
+
+    return showDomain;
   }
 
-  select.addEventListener("change", () => {
-    showDomain(select.value, false);
-  });
+  const showDns = wireSelect("dns-domain-select", ".dns-domain-block[data-domain]");
+  wireSelect("smtp-allow-domain-select", ".smtp-allow-block[data-domain]");
 
   document.addEventListener("click", (event) => {
     const button = event.target.closest("[data-show-dns]");
-    if (!button) return;
+    if (!button || !showDns) return;
     const domain = button.getAttribute("data-show-dns");
     if (!domain) return;
-    showDomain(domain, true);
+    showDns(domain, "dns-section");
   });
-
-  // Honor ?domain=example.com in the URL if present
-  const params = new URLSearchParams(window.location.search);
-  const fromUrl = params.get("domain");
-  if (fromUrl && blocks.some((b) => b.getAttribute("data-domain") === fromUrl)) {
-    showDomain(fromUrl, false);
-  } else {
-    showDomain(select.value, false);
-  }
 })();

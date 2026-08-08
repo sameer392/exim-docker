@@ -92,6 +92,10 @@ def apply_send_aliases() -> str:
     return reload_exim()
 
 
+def apply_smtp_allow() -> str:
+    return reload_exim()
+
+
 def read_dkim_record(domain: str, selector: str) -> str | None:
     client = _client()
     if not client:

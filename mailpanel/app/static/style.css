@@ -281,6 +281,8 @@ form.inline { display: inline; }
   max-width: 100%;
 }
 .dns-domain-block[hidden] { display: none !important; }
+.smtp-allow-block[hidden] { display: none !important; }
+.smtp-allow-table { margin-top: 1rem; }
 .actions-cell {
   display: flex;
   align-items: center;

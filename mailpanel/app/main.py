@@ -8,7 +8,7 @@ from pathlib import Path
 
 from .auth import create_session_token, is_authenticated, verify_admin_password
 from .config import SESSION_COOKIE
-from .services import docker_ops, dns as dns_service, logs, mail, rate_limits, send_aliases
+from .services import docker_ops, dns as dns_service, logs, mail, rate_limits, send_aliases, smtp_allow
 from .urls import webmail_url
 
 app = FastAPI(title="Mail Admin Panel", docs_url=None, redoc_url=None)
@@ -91,6 +91,7 @@ async def domains_page(request: Request):
     domains = mail.list_domains()
     selector = mail.read_text_file(mail.DKIM_SELECTOR_FILE, "")
     hostname = mail.read_text_file(mail.PRIMARY_HOSTNAME_FILE, "")
+    smtp_allow.ensure_defaults()
     domain_dns = {}
     for domain in domains:
         dkim_raw = docker_ops.read_dkim_record(domain, selector) if selector else None
@@ -102,6 +103,7 @@ async def domains_page(request: Request):
         "domains.html",
         domains=domains,
         domain_dns=domain_dns,
+        smtp_allow_ips=smtp_allow.list_allow_ips(),
         selector=selector,
         hostname=hostname,
         message=request.query_params.get("msg"),
@@ -128,8 +130,47 @@ async def domains_delete(request: Request, domain: str = Form(...)):
         return redirect
     try:
         mail.remove_domain(domain)
+        smtp_allow.remove_domain(domain)
         docker_ops.restart_mail_services()
         return RedirectResponse(f"/domains?msg=Domain+{domain}+removed", status_code=303)
+    except Exception as exc:
+        return RedirectResponse(f"/domains?error={quote(str(exc))}", status_code=303)
+
+
+@app.post("/domains/smtp-allow/add")
+async def domains_smtp_allow_add(
+    request: Request,
+    domain: str = Form(...),
+    ip: str = Form(...),
+):
+    if redirect := require_auth(request):
+        return redirect
+    try:
+        smtp_allow.add_ip(domain, ip)
+        docker_ops.apply_smtp_allow()
+        return RedirectResponse(
+            f"/domains?msg=Allowed+SMTP+IP+{quote(ip)}+for+{quote(domain)}&domain={quote(domain)}",
+            status_code=303,
+        )
+    except Exception as exc:
+        return RedirectResponse(f"/domains?error={quote(str(exc))}", status_code=303)
+
+
+@app.post("/domains/smtp-allow/delete")
+async def domains_smtp_allow_delete(
+    request: Request,
+    domain: str = Form(...),
+    ip: str = Form(...),
+):
+    if redirect := require_auth(request):
+        return redirect
+    try:
+        smtp_allow.remove_ip(domain, ip)
+        docker_ops.apply_smtp_allow()
+        return RedirectResponse(
+            f"/domains?msg=Removed+SMTP+IP+{quote(ip)}+for+{quote(domain)}&domain={quote(domain)}",
+            status_code=303,
+        )
     except Exception as exc:
         return RedirectResponse(f"/domains?error={quote(str(exc))}", status_code=303)
 
