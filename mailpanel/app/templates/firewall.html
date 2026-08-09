@@ -37,7 +37,7 @@
   {% if manual %}
   <table>
     <thead>
-      <tr><th>IP / CIDR</th><th>Reason</th><th>Added</th><th></th></tr>
+      <tr><th>IP / CIDR</th><th>Reason</th><th>Added</th><th>Remaining</th><th></th></tr>
     </thead>
     <tbody>
       {% for row in manual %}
@@ -45,6 +45,7 @@
         <td><code>{{ row.ip }}</code></td>
         <td>{{ row.reason or '—' }}</td>
         <td class="muted">{{ row.added_at or '—' }}</td>
+        <td><strong>{{ row.remaining }}</strong></td>
         <td>
           <form method="post" action="/firewall/unblock" class="inline"
                 onsubmit="return confirm('Unblock {{ row.ip }}?');">
@@ -63,17 +64,19 @@
 
 <section class="card">
   <h2>fail2ban auto-bans (temporary)</h2>
-  <p class="muted">Cleared when the ban expires (default 12h) or when you unblock.</p>
+  <p class="muted">Cleared when the ban expires (default 12h) or when you unblock. Remaining time refreshes about every minute.</p>
   {% if fail2ban %}
   <table>
     <thead>
-      <tr><th>IP</th><th>Source</th><th></th></tr>
+      <tr><th>IP</th><th>Source</th><th>Expires</th><th>Remaining</th><th></th></tr>
     </thead>
     <tbody>
       {% for row in fail2ban %}
       <tr>
         <td><code>{{ row.ip }}</code></td>
         <td>{{ row.reason }}</td>
+        <td class="muted">{{ row.expires_at }}</td>
+        <td><strong>{{ row.remaining }}</strong></td>
         <td>
           <form method="post" action="/firewall/unblock" class="inline"
                 onsubmit="return confirm('Unban {{ row.ip }} from fail2ban?');">

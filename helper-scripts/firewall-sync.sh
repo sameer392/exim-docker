@@ -37,6 +37,7 @@ import os
 import re
 import subprocess
 import sys
+import time
 from datetime import datetime, timezone
 
 store_path, status_path, unban_queue, ignore_local, f2b_jail, manual_comment = sys.argv[1:7]
@@ -144,8 +145,9 @@ if os.path.exists(unban_queue):
         del_manual(ip)
         run(["fail2ban-client", "set", f2b_jail, "unbanip", ip], check=False)
 
-# Collect fail2ban bans
+# Collect fail2ban bans (with remaining time)
 f2b_banned = []
+f2b_details = []
 f2b_ok = False
 r = run(["fail2ban-client", "status", f2b_jail])
 if r.returncode == 0:
@@ -154,11 +156,74 @@ if r.returncode == 0:
     if m and m.group(1).strip():
         f2b_banned = m.group(1).split()
 
+now = int(time.time())
+rt = run(["fail2ban-client", "get", f2b_jail, "banip", "--with-time"])
+if rt.returncode == 0 and rt.stdout.strip():
+    # Example: 203.0.113.50 \t2026-08-09 08:41:11 + 43200 = 2026-08-09 20:41:11
+    for line in rt.stdout.splitlines():
+        line = line.strip()
+        if not line:
+            continue
+        m = re.match(
+            r"^(\d+\.\d+\.\d+\.\d+)\s+(\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2})\s+\+\s+(\d+)\s+=\s+(\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2})",
+            line,
+        )
+        if not m:
+            ip = line.split()[0]
+            f2b_details.append({
+                "ip": ip,
+                "bantime": None,
+                "banned_at": None,
+                "expires_at": None,
+                "remaining_seconds": None,
+            })
+            continue
+        ip, banned_at, bantime_s, expires_at = m.group(1), m.group(2), int(m.group(3)), m.group(4)
+        try:
+            exp_ts = int(datetime.strptime(expires_at, "%Y-%m-%d %H:%M:%S").timestamp())
+            remaining = max(0, exp_ts - now)
+        except ValueError:
+            remaining = bantime_s
+            exp_ts = None
+        f2b_details.append({
+            "ip": ip,
+            "bantime": bantime_s,
+            "banned_at": banned_at.replace(" ", "T") + "Z",
+            "expires_at": expires_at.replace(" ", "T") + "Z",
+            "remaining_seconds": remaining,
+        })
+elif f2b_banned:
+    # Fallback: sqlite
+    try:
+        import sqlite3
+        db = "/var/lib/fail2ban/fail2ban.sqlite3"
+        if os.path.exists(db):
+            conn = sqlite3.connect(db)
+            for ip, tob, bt in conn.execute(
+                "SELECT ip, timeofban, bantime FROM bips WHERE jail=?",
+                (f2b_jail,),
+            ):
+                remaining = max(0, int(tob) + int(bt) - now) if tob and bt else None
+                f2b_details.append({
+                    "ip": ip,
+                    "bantime": bt,
+                    "banned_at": datetime.fromtimestamp(tob, timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ") if tob else None,
+                    "expires_at": datetime.fromtimestamp(tob + bt, timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ") if tob and bt else None,
+                    "remaining_seconds": remaining,
+                })
+            conn.close()
+    except Exception:
+        f2b_details = [{"ip": ip, "remaining_seconds": None} for ip in f2b_banned]
+
+if not f2b_details and f2b_banned:
+    f2b_details = [{"ip": ip, "remaining_seconds": None} for ip in f2b_banned]
+
 status = {
     "updated_at": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
     "fail2ban_ok": f2b_ok,
     "fail2ban_jail": f2b_jail,
     "fail2ban_banned": sorted(f2b_banned),
+    "fail2ban_bans": f2b_details,
     "manual_banned": sorted(wanted),
     "whitelist": whitelist,
     "docker_user_rules": list_manual_rules(),
