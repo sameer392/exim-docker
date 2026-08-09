@@ -18,6 +18,11 @@ SEND_ALIASES_JSON = DATA_DIR / "exim" / "send_aliases.json"
 SEND_ALIASES_FILE = DATA_DIR / "exim" / "send_aliases"
 SMTP_ALLOW_JSON = DATA_DIR / "exim" / "smtp_allow_ips.json"
 SMTP_ALLOW_FILE = DATA_DIR / "exim" / "smtp_allow"
+FIREWALL_DIR = DATA_DIR / "firewall"
+FIREWALL_STORE = FIREWALL_DIR / "blocked_ips.json"
+FIREWALL_STATUS = FIREWALL_DIR / "status.json"
+FIREWALL_SYNC_REQUEST = FIREWALL_DIR / "sync.request"
+FIREWALL_UNBAN_QUEUE = FIREWALL_DIR / "unban.queue"
 
 ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", "ChangeAdminPass!")
 ADMIN_SECRET = os.getenv("ADMIN_SECRET", "change-me-in-production")

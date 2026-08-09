@@ -8,7 +8,7 @@ from pathlib import Path
 
 from .auth import create_session_token, is_authenticated, verify_admin_password
 from .config import SESSION_COOKIE
-from .services import docker_ops, dns as dns_service, logs, mail, rate_limits, send_aliases, smtp_allow
+from .services import docker_ops, dns as dns_service, firewall_bans, logs, mail, rate_limits, send_aliases, smtp_allow
 from .urls import webmail_url
 
 app = FastAPI(title="Mail Admin Panel", docs_url=None, redoc_url=None)
@@ -368,6 +368,84 @@ async def services_restart(request: Request):
         return RedirectResponse(f"/?msg=Restarted:+{names}", status_code=303)
     except Exception as exc:
         return RedirectResponse(f"/?error={quote(str(exc))}", status_code=303)
+
+
+@app.get("/firewall", response_class=HTMLResponse)
+async def firewall_page(request: Request):
+    if redirect := require_auth(request):
+        return redirect
+    firewall_bans.ensure_defaults()
+    page = firewall_bans.list_blocked_page()
+    return render(
+        request,
+        "firewall.html",
+        manual=page["manual"],
+        fail2ban=page["fail2ban"],
+        whitelist=page["whitelist"],
+        status=page["status"],
+        message=request.query_params.get("msg"),
+        error=request.query_params.get("error"),
+    )
+
+
+@app.post("/firewall/block")
+async def firewall_block(
+    request: Request,
+    ip: str = Form(...),
+    reason: str = Form(""),
+):
+    if redirect := require_auth(request):
+        return redirect
+    try:
+        firewall_bans.add_block(ip, reason)
+        return RedirectResponse(
+            f"/firewall?msg=Blocked+{quote(ip)}+(sync+in+a+few+seconds)",
+            status_code=303,
+        )
+    except Exception as exc:
+        return RedirectResponse(f"/firewall?error={quote(str(exc))}", status_code=303)
+
+
+@app.post("/firewall/unblock")
+async def firewall_unblock(request: Request, ip: str = Form(...)):
+    if redirect := require_auth(request):
+        return redirect
+    try:
+        firewall_bans.remove_block(ip)
+        return RedirectResponse(
+            f"/firewall?msg=Unblocked+{quote(ip)}",
+            status_code=303,
+        )
+    except Exception as exc:
+        return RedirectResponse(f"/firewall?error={quote(str(exc))}", status_code=303)
+
+
+@app.post("/firewall/whitelist/add")
+async def firewall_whitelist_add(request: Request, ip: str = Form(...)):
+    if redirect := require_auth(request):
+        return redirect
+    try:
+        firewall_bans.add_whitelist(ip)
+        return RedirectResponse(
+            f"/firewall?msg=Whitelisted+{quote(ip)}",
+            status_code=303,
+        )
+    except Exception as exc:
+        return RedirectResponse(f"/firewall?error={quote(str(exc))}", status_code=303)
+
+
+@app.post("/firewall/whitelist/remove")
+async def firewall_whitelist_remove(request: Request, ip: str = Form(...)):
+    if redirect := require_auth(request):
+        return redirect
+    try:
+        firewall_bans.remove_whitelist(ip)
+        return RedirectResponse(
+            f"/firewall?msg=Removed+{quote(ip)}+from+whitelist",
+            status_code=303,
+        )
+    except Exception as exc:
+        return RedirectResponse(f"/firewall?error={quote(str(exc))}", status_code=303)
 
 
 @app.get("/logs", response_class=HTMLResponse)

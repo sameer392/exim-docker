@@ -117,6 +117,11 @@ HOSTNAME="${HOSTNAME}" CERTBOT_EMAIL="${CERTBOT_EMAIL}" ./helper-scripts/obtain-
     echo "Retry later: HOSTNAME=${HOSTNAME} ./helper-scripts/obtain-letsencrypt-cert.sh"
 }
 
+echo "Configuring fail2ban + firewall sync (AUTH abuse blocking)..."
+./helper-scripts/setup-firewall.sh || {
+    echo "Warning: firewall setup failed — you can retry: ./helper-scripts/setup-firewall.sh"
+}
+
 echo ""
 echo "============================================"
 echo "  Installation complete"

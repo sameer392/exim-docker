@@ -7,9 +7,9 @@ Pre-production and ongoing security tasks for exim-docker deployments.
 ### Server and SSH
 
 - [ ] Disable password SSH login; use key-only (`PasswordAuthentication no` in `sshd_config`)
-- [ ] Install **fail2ban** for SSH, Exim auth, and admin panel
+- [ ] Run `./helper-scripts/setup-firewall.sh` (fail2ban + Blocked IPs in admin panel)
 - [ ] Keep OS and Docker updated
-- [ ] Firewall: only required ports open (see [ports-and-services.md](ports-and-services.md))
+- [ ] Firewall: only required ports open (see [ports-and-services.md](ports-and-services.md); setup-firewall opens mail ports in firewalld)
 
 ### Secrets
 
