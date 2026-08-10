@@ -1,4 +1,8 @@
+import os
 import re
+
+# Shared SPF include (Cloudflare: _spf.<provider> → _netblocks*.<provider> with ip4:…)
+SPF_INCLUDE = os.getenv("SPF_INCLUDE", "_spf.smtp24x7.com").strip() or "_spf.smtp24x7.com"
 
 
 def parse_dkim_txt_value(raw: str) -> str:
@@ -30,7 +34,7 @@ def domain_dns_records(
         {
             "type": "TXT",
             "name": "@",
-            "value": f"v=spf1 mx a:{mx_host} ~all",
+            "value": f"v=spf1 mx include:{SPF_INCLUDE} ~all",
             "label": "SPF",
         },
     ]

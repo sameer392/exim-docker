@@ -46,6 +46,6 @@ fi
 echo ""
 echo "Next steps for $DOMAIN:"
 echo "  1. Add MX record pointing to your mail server"
-echo "  2. Add SPF record: v=spf1 mx a:<your-smtp-host> ~all"
+echo "  2. Add SPF record: v=spf1 mx include:_spf.smtp24x7.com ~all"
 echo "  3. Add DKIM TXT record (see setup-dkim output above)"
 echo "  4. Add mail users: ./helper-scripts/change-password.sh user@${DOMAIN} <password>"

@@ -138,6 +138,7 @@ services:
       - ADMIN_PASSWORD=${ADMIN_PASSWORD:-ChangeAdminPass!}
       - ADMIN_SECRET=${ADMIN_SECRET:-change-this-secret-in-production}
       - DATA_DIR=/data
+      - SPF_INCLUDE=${SPF_INCLUDE:-_spf.smtp24x7.com}
     volumes:
       - ./data:/data
       - /var/run/docker.sock:/var/run/docker.sock
